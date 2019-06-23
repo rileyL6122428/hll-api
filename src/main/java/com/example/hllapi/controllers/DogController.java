@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import com.example.hllapi.model.Dog;
-import com.example.hllapi.repository.AudioTrackRepo;
+import com.example.hllapi.repository.AudioFileRepo;
 import com.example.hllapi.repository.DogRepo;
 
 @Controller
@@ -23,7 +23,7 @@ public class DogController {
 	private DogRepo dogRepo;
 	
 	@Autowired
-	private AudioTrackRepo trackRepo;
+	private AudioFileRepo trackRepo;
 	
 	@GetMapping(value="/api/public/dogs")
 	@ResponseBody
