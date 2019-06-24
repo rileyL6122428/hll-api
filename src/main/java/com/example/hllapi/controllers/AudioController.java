@@ -16,19 +16,23 @@ import com.example.hllapi.repository.AudioFileRepo;
 @Controller
 public class AudioController {
 
+	private AudioFileRepo audioFileRepo;
+	
 	@Autowired
-	private AudioFileRepo audioTrackRepo;
+	public AudioController(AudioFileRepo audioFileRepo) {
+		this.audioFileRepo = audioFileRepo;
+	}
 	
 	@GetMapping(value="/api/public/stream-audio/sample", produces="audio/mpeg")
 	@ResponseBody
 	public GridFsResource getTrack() throws Exception {
-		return audioTrackRepo.getExample();
+		return audioFileRepo.getExample();
 	}
 	
 	@PostMapping(value="/api/public/audio/upload")
 	@CrossOrigin
-	public ResponseEntity<Object> uploadTrack(@RequestParam("audio-file") MultipartFile file) throws Exception {
-		audioTrackRepo.store(file.getInputStream());
-		return ResponseEntity.ok().body(null);
+	public ResponseEntity<String> uploadTrack(@RequestParam("audio-file") MultipartFile file) throws Exception {
+		String storedId = audioFileRepo.store(file.getInputStream());
+		return ResponseEntity.ok().body(storedId);
 	}
 }
