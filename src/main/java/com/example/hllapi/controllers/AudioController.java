@@ -66,15 +66,17 @@ public class AudioController {
 		return new InputStreamResource(responseInputStream);
 	}
 
-	public void streamTrack(String trackId) {
+	public InputStreamResource streamTrack(String trackId) {
 		Track track = audioRepo.getTrackById(trackId);
 		
-		s3.getObject(
+		ResponseInputStream<GetObjectResponse> responseInputStream = s3.getObject(
 			GetObjectRequest.builder()
 				.bucket("hey-look-listen")
 				.key(track.getTrackKey())
 				.build()
 		);
+		
+		return new InputStreamResource(responseInputStream);
 	}
 	
 //	@PostMapping(value="/api/public/audio/upload")
