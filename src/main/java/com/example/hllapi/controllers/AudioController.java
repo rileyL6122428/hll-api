@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.example.hllapi.model.Track;
 import com.example.hllapi.repository.AudioFileRepo;
 import com.example.hllapi.repository.AudioRepo;
 
@@ -66,7 +67,14 @@ public class AudioController {
 	}
 
 	public void streamTrack(String trackId) {
-		audioRepo.getTrackById(trackId);
+		Track track = audioRepo.getTrackById(trackId);
+		
+		s3.getObject(
+			GetObjectRequest.builder()
+				.bucket("hey-look-listen")
+				.key(track.getTrackKey())
+				.build()
+		);
 	}
 	
 //	@PostMapping(value="/api/public/audio/upload")

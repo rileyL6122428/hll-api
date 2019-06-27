@@ -1,14 +1,19 @@
 package com.example.hllapi.controllers;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.*;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Mockito;
 
+import com.example.hllapi.model.Track;
 import com.example.hllapi.repository.AudioRepo;
 
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 
 class AudioControllerTest {
 
@@ -30,11 +35,31 @@ class AudioControllerTest {
 	@Nested
 	class StreamTrackMethod {
 		
+		Track track;
+		
+		@BeforeEach
+		void setup() {
+			track = mock(Track.class);
+			when(track.getId()).thenReturn("EXAMPLE_TRACK_ID");
+			when(audioRepo.getTrackById(track.getId())).thenReturn(track);
+		}
+		
 		@Test
 		void looksUpTrackInAudioRepoWithProvidedTrackId() {
-			String trackId = "EXAMPLE_TRACK_ID";
-			audioController.streamTrack(trackId);
-			verify(audioRepo).getTrackById(trackId);
+			audioController.streamTrack(track.getId());
+			verify(audioRepo).getTrackById(track.getId());
+		}
+		
+		@Test
+		void usesTrackBucketIdToPullAudioFileFromS3() {
+			when(track.getTrackKey()).thenReturn("EXAMPLE_TRACK_KEY");
+			
+			audioController.streamTrack(track.getId());
+			
+			ArgumentCaptor<GetObjectRequest> getObjArgCaptor = ArgumentCaptor.forClass(GetObjectRequest.class);
+			verify(s3).getObject(getObjArgCaptor.capture());
+			assertEquals("hey-look-listen", getObjArgCaptor.getValue().bucket());
+			assertEquals("EXAMPLE_TRACK_KEY", getObjArgCaptor.getValue().key());
 		}
 	}
 	
