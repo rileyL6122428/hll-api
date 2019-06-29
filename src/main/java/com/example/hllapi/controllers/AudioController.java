@@ -1,9 +1,15 @@
 package com.example.hllapi.controllers;
 
 import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.InputStreamResource;
+import org.springframework.data.domain.ExampleMatcher;
+import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.gridfs.GridFsResource;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
@@ -71,6 +77,8 @@ public class AudioController {
 	@GetMapping(value="/api/public/track/{trackId}/stream", produces="audio/mpeg")
 	@ResponseBody
 	public InputStreamResource streamTrack(@PathVariable String trackId) {
+		
+		
 		Track track = trackRepo.byId(trackId);
 		
 		ResponseInputStream<GetObjectResponse> responseInputStream = s3.getObject(
@@ -81,6 +89,12 @@ public class AudioController {
 		);
 		
 		return new InputStreamResource(responseInputStream);
+	}
+
+	@GetMapping(value="/api/public/track")
+	public ResponseEntity<Iterable<Track>> getTrackMetaData(@RequestParam("id") List<String> trackIds) {
+		Iterable<Track> tracks = trackRepo.findAllById(trackIds);
+		return ResponseEntity.ok(tracks);
 	}
 
 }

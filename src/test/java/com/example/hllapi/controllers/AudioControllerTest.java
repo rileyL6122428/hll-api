@@ -1,17 +1,26 @@
 package com.example.hllapi.controllers;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
-import java.io.IOException;
+import static java.util.Arrays.asList;
+
+import java.util.Iterator;
+import java.util.List;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
-import org.mockito.Mockito;
 import org.springframework.core.io.InputStreamResource;
+import org.springframework.data.domain.Example;
+import org.springframework.data.domain.ExampleMatcher;
+import org.springframework.http.ResponseEntity;
 
 import com.example.hllapi.model.Track;
 import com.example.hllapi.repository.TrackRepo;
@@ -75,6 +84,38 @@ class AudioControllerTest {
 		void returnsFetchedAudioFileAsAnInputStreamResource() throws Exception {
 			InputStreamResource audioFileStream = audioController.streamTrack(track.getId());
 			assertEquals(getS3ObjResponseStream, audioFileStream.getInputStream());
+		}
+	}
+	
+	@Nested
+	class GetTrackMetaData {
+		
+		private Track track1;
+		private Track track2;
+		private List<String> trackIds;
+
+		@BeforeEach
+		void setup() {
+			track1 = mock(Track.class);
+			track2 = mock(Track.class);			
+			trackIds = asList("EXAMPLE_ID_1", "EXAMPLE_ID_2");
+		}
+		
+		@Test
+		void delgatesTrackLookupToTrackRepo() {
+			audioController.getTrackMetaData(trackIds);
+			verify(trackRepo).findAllById(trackIds);
+		}
+		
+		@Test
+		void returnsTracksFoundByTrackRepo() {
+			when(trackRepo.findAllById(trackIds)).thenReturn(asList(track1, track2));
+			ResponseEntity<Iterable<Track>> response = audioController.getTrackMetaData(trackIds);
+			
+			Iterator<Track> tracksIterator = response.getBody().iterator();
+			assertEquals(track1, tracksIterator.next());
+			assertEquals(track2, tracksIterator.next());
+			assertFalse(tracksIterator.hasNext());
 		}
 	}
 
