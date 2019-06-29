@@ -14,7 +14,7 @@ import org.mockito.Mockito;
 import org.springframework.core.io.InputStreamResource;
 
 import com.example.hllapi.model.Track;
-import com.example.hllapi.repository.AudioRepo;
+import com.example.hllapi.repository.TrackRepo;
 
 import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.services.s3.S3Client;
@@ -24,16 +24,16 @@ import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 class AudioControllerTest {
 
 	AudioController audioController;
-	AudioRepo audioRepo;
+	TrackRepo trackRepo;
 	S3Client s3;
 	
 	@BeforeEach
 	void setup() {
-		audioRepo = mock(AudioRepo.class);
+		trackRepo = mock(TrackRepo.class);
 		s3 = mock(S3Client.class);
 		
 		audioController = new AudioController(
-			audioRepo,
+			trackRepo,
 			s3
 		);
 	}
@@ -50,15 +50,15 @@ class AudioControllerTest {
 			getS3ObjResponseStream = mock(ResponseInputStream.class);
 			
 			when(track.getId()).thenReturn("EXAMPLE_TRACK_ID");
-			when(audioRepo.getTrackById(track.getId())).thenReturn(track);
-			when(track.getTrackKey()).thenReturn("EXAMPLE_TRACK_KEY");
+			when(trackRepo.byId(track.getId())).thenReturn(track);
+			when(track.getS3Key()).thenReturn("EXAMPLE_TRACK_KEY");
 			when(s3.getObject(any(GetObjectRequest.class))).thenReturn(getS3ObjResponseStream);
 		}
 		
 		@Test
 		void looksUpTrackInAudioRepoWithProvidedTrackId() {
 			audioController.streamTrack(track.getId());
-			verify(audioRepo).getTrackById(track.getId());
+			verify(trackRepo).byId(track.getId());
 		}
 		
 		@Test
@@ -77,37 +77,5 @@ class AudioControllerTest {
 			assertEquals(getS3ObjResponseStream, audioFileStream.getInputStream());
 		}
 	}
-	
-//	@Nested
-//	class UploadTrackMethod {
-//		
-//		MultipartFile upload;
-//		InputStream uploadInputStream;
-//		
-//		@BeforeEach
-//		void setup() throws Exception {
-//			upload = mock(MultipartFile.class);
-//			uploadInputStream = mock(InputStream.class);
-//			
-//			when(upload.getInputStream()).thenReturn(uploadInputStream);
-//		}
-//		
-//		@Test
-//		void storesFileInputStream() throws Exception {
-//			audioController.uploadTrack(upload);
-//			verify(audioFileRepo).store(uploadInputStream);
-//		}
-//		
-//		@Test
-//		void returnsFileIdReturnedByFileRepo() throws Exception {
-//			String storedFileId = "EXAMPLE_FILE_ID";
-//			when(audioFileRepo.store(uploadInputStream)).thenReturn(storedFileId);
-//			
-//			ResponseEntity<String> uploadFileResponse = audioController.uploadTrack(upload);
-//			String returnedFileId = uploadFileResponse.getBody();
-//			
-//			assertEquals(storedFileId, returnedFileId);
-//		}
-//	}
 
 }
