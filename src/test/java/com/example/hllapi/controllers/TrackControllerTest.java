@@ -30,9 +30,9 @@ import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 
-class AudioControllerTest {
+class TrackControllerTest {
 
-	AudioController audioController;
+	TrackController trackController;
 	TrackRepo trackRepo;
 	S3Client s3;
 	String bucketName;
@@ -43,11 +43,11 @@ class AudioControllerTest {
 		trackRepo = mock(TrackRepo.class);
 		s3 = mock(S3Client.class);
 		
-		audioController = new AudioController(
+		trackController = new TrackController(
 			trackRepo,
 			s3
 		);
-		audioController.setBucketName(bucketName);
+		trackController.setBucketName(bucketName);
 	}
 	
 	@Nested
@@ -68,14 +68,14 @@ class AudioControllerTest {
 		}
 		
 		@Test
-		void looksUpTrackInAudioRepoWithProvidedTrackId() {
-			audioController.streamTrack(track.getId());
+		void looksUpTrackInTrackRepoWithProvidedTrackId() {
+			trackController.streamTrack(track.getId());
 			verify(trackRepo).byId(track.getId());
 		}
 		
 		@Test
 		void usesTrackBucketIdToPullAudioFileFromS3() {
-			audioController.streamTrack(track.getId());
+			trackController.streamTrack(track.getId());
 			
 			ArgumentCaptor<GetObjectRequest> getObjArgCaptor = ArgumentCaptor.forClass(GetObjectRequest.class);
 			verify(s3).getObject(getObjArgCaptor.capture());
@@ -85,7 +85,7 @@ class AudioControllerTest {
 		
 		@Test
 		void returnsFetchedAudioFileAsAnInputStreamResource() throws Exception {
-			InputStreamResource audioFileStream = audioController.streamTrack(track.getId());
+			InputStreamResource audioFileStream = trackController.streamTrack(track.getId());
 			assertEquals(getS3ObjResponseStream, audioFileStream.getInputStream());
 		}
 	}
@@ -106,14 +106,14 @@ class AudioControllerTest {
 		
 		@Test
 		void delgatesTrackLookupToTrackRepo() {
-			audioController.getTrackMetaData(trackIds);
+			trackController.getTrackMetaData(trackIds);
 			verify(trackRepo).findAllById(trackIds);
 		}
 		
 		@Test
 		void returnsTracksFoundByTrackRepo() {
 			when(trackRepo.findAllById(trackIds)).thenReturn(asList(track1, track2));
-			ResponseEntity<Iterable<Track>> response = audioController.getTrackMetaData(trackIds);
+			ResponseEntity<Iterable<Track>> response = trackController.getTrackMetaData(trackIds);
 			
 			Iterator<Track> tracksIterator = response.getBody().iterator();
 			assertEquals(track1, tracksIterator.next());

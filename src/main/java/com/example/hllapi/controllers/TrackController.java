@@ -21,7 +21,7 @@ import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 
 @Controller
-public class AudioController {
+public class TrackController {
 
 	private S3Client s3;
 	private TrackRepo trackRepo;
@@ -30,11 +30,11 @@ public class AudioController {
 	private String bucketName;
 	
 	@Autowired
-	public AudioController(
-			TrackRepo audioRepo,
+	public TrackController(
+			TrackRepo trackRepo,
 			S3Client s3
 	) {
-		this.trackRepo = audioRepo;
+		this.trackRepo = trackRepo;
 		this.s3 = s3;
 	}
 	
