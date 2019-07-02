@@ -35,9 +35,11 @@ class AudioControllerTest {
 	AudioController audioController;
 	TrackRepo trackRepo;
 	S3Client s3;
+	String bucketName;
 	
 	@BeforeEach
 	void setup() {
+		bucketName = "hey-look-listen";
 		trackRepo = mock(TrackRepo.class);
 		s3 = mock(S3Client.class);
 		
@@ -45,6 +47,7 @@ class AudioControllerTest {
 			trackRepo,
 			s3
 		);
+		audioController.setBucketName(bucketName);
 	}
 	
 	@Nested
@@ -76,7 +79,7 @@ class AudioControllerTest {
 			
 			ArgumentCaptor<GetObjectRequest> getObjArgCaptor = ArgumentCaptor.forClass(GetObjectRequest.class);
 			verify(s3).getObject(getObjArgCaptor.capture());
-			assertEquals("hey-look-listen", getObjArgCaptor.getValue().bucket());
+			assertEquals(bucketName, getObjArgCaptor.getValue().bucket());
 			assertEquals("EXAMPLE_TRACK_KEY", getObjArgCaptor.getValue().key());
 		}
 		
