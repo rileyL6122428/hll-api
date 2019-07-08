@@ -7,10 +7,14 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.example.hllapi.model.Track;
 import com.example.hllapi.repository.TrackRepo;
@@ -38,11 +42,20 @@ public class TrackController {
 		this.s3 = s3;
 	}
 	
+	@PostMapping(value="/api/private/track")
+	@CrossOrigin
+	public ResponseEntity<Object> postTrack(
+		@RequestHeader(value="Authorization") String authHeader,
+		@RequestParam("audio-file") MultipartFile audioFile
+	) {
+		System.out.println("here is the uploaded audioFile");
+		System.out.println(audioFile);
+		return ResponseEntity.ok("UPLOADED!");
+	}
+	
 	@GetMapping(value="/api/public/track/{trackId}/stream", produces="audio/mpeg")
 	@ResponseBody
 	public InputStreamResource streamTrack(@PathVariable String trackId) {
-		
-		
 		Track track = trackRepo.byId(trackId);
 		
 		ResponseInputStream<GetObjectResponse> responseInputStream = s3.getObject(
