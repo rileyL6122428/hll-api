@@ -1,10 +1,12 @@
 package com.example.hllapi.controllers;
 
+import java.io.IOException;
 import java.util.List;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.InputStreamResource;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.CrossOrigin;
@@ -19,10 +21,14 @@ import org.springframework.web.multipart.MultipartFile;
 import com.example.hllapi.model.Track;
 import com.example.hllapi.repository.TrackRepo;
 
+import software.amazon.awssdk.awscore.exception.AwsServiceException;
 import software.amazon.awssdk.core.ResponseInputStream;
+import software.amazon.awssdk.core.exception.SdkClientException;
+import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectResponse;
+import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
 @Controller
 public class TrackController {
@@ -35,8 +41,8 @@ public class TrackController {
 	
 	@Autowired
 	public TrackController(
-			TrackRepo trackRepo,
-			S3Client s3
+		TrackRepo trackRepo,
+		S3Client s3
 	) {
 		this.trackRepo = trackRepo;
 		this.s3 = s3;
@@ -44,13 +50,32 @@ public class TrackController {
 	
 	@PostMapping(value="/api/private/track")
 	@CrossOrigin
-	public ResponseEntity<Object> postTrack(
+	public ResponseEntity<String> postTrack(
 		@RequestHeader(value="Authorization") String authHeader,
 		@RequestParam("audio-file") MultipartFile audioFile
 	) {
-		System.out.println("here is the uploaded audioFile");
-		System.out.println(audioFile);
-		return ResponseEntity.ok("UPLOADED!");
+		
+		ResponseEntity<String> response;
+		
+		try {
+			s3.putObject(
+				PutObjectRequest.builder()
+					.bucket(bucketName)
+					.key(audioFile.getName())
+					.build(),
+					RequestBody.fromBytes(audioFile.getBytes())
+			);
+			
+			response = ResponseEntity.ok("UPLOAD SUCCEEDED.");
+			
+		} catch (AwsServiceException | SdkClientException | IOException exception) {
+			exception.printStackTrace();
+			response = ResponseEntity
+				.status(HttpStatus.INTERNAL_SERVER_ERROR)
+				.body("UPLOAD FAILED.");
+		}
+		
+		return response;
 	}
 	
 	@GetMapping(value="/api/public/track/{trackId}/stream", produces="audio/mpeg")
