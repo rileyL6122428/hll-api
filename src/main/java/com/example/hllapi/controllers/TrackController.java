@@ -3,6 +3,7 @@ package com.example.hllapi.controllers;
 import java.io.IOException;
 import java.util.List;
 
+import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.InputStreamResource;
@@ -48,14 +49,13 @@ public class TrackController {
 		this.s3 = s3;
 	}
 	
-	@PostMapping(value="/api/public/track")
+	@PostMapping(value="/api/private/track")
 	@CrossOrigin
-	public ResponseEntity<String> postTrack(
-		@RequestHeader(value="Authorization") String authHeader,
+	public ResponseEntity<JSONObject> postTrack(
 		@RequestParam("audio-file") MultipartFile audioFile
-	) {
+	) throws Exception {
 		
-		ResponseEntity<String> response;
+		ResponseEntity<JSONObject> response;
 		
 		try {
 			if (audioFile.getContentType().equalsIgnoreCase("audio/mp3")) {
@@ -68,10 +68,16 @@ public class TrackController {
 					RequestBody.fromBytes(audioFile.getBytes())
 				);
 					
-				response = ResponseEntity.ok("UPLOAD SUCCEEDED.");
+				response = ResponseEntity.ok(new JSONObject() {{
+					put("message", "UPLOAD SUCEEDED");
+				}});
 					
 			} else {
-				throw new RuntimeException("CONTENT TYPE OTHER THAN audio/mp3 NOT ALLOWED");
+				response = ResponseEntity
+					.badRequest()
+					.body(new JSONObject() {{
+						put("message", "UNALLOWED CONTENT TYPE");
+					}});
 			}
 			
 		} catch (Exception exception) {
@@ -79,7 +85,9 @@ public class TrackController {
 			
 			response = ResponseEntity
 				.status(HttpStatus.INTERNAL_SERVER_ERROR)
-				.body("UPLOAD FAILED.");
+				.body(new JSONObject() {{
+					put("message", "UPLOAD FAILED");
+				}});
 		}
 		
 		return response;

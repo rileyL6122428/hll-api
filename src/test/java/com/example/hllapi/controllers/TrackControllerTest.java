@@ -12,6 +12,7 @@ import static java.util.Arrays.asList;
 import java.util.Iterator;
 import java.util.List;
 
+import org.json.JSONObject;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Nested;
@@ -20,7 +21,9 @@ import org.mockito.ArgumentCaptor;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.data.domain.Example;
 import org.springframework.data.domain.ExampleMatcher;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.multipart.MultipartFile;
 
 import com.example.hllapi.model.Track;
 import com.example.hllapi.repository.TrackRepo;
@@ -51,7 +54,7 @@ class TrackControllerTest {
 	}
 	
 	@Nested
-	class StreamTrackMethod {
+	class StreamTrack {
 		
 		Track track;
 		ResponseInputStream<GetObjectResponse> getS3ObjResponseStream;
@@ -119,6 +122,25 @@ class TrackControllerTest {
 			assertEquals(track1, tracksIterator.next());
 			assertEquals(track2, tracksIterator.next());
 			assertFalse(tracksIterator.hasNext());
+		}
+	}
+	
+	@Nested
+	class PostTrack {
+		
+		MultipartFile file;
+		
+		@BeforeEach
+		void setup() {
+			file = mock(MultipartFile.class);
+		}
+		
+		@Test
+		void returnsABadRequestStatusCodeWhenFileIsNotAnMp3() throws Exception {
+			when(file.getContentType()).thenReturn("NOT_AN_MP3");
+			ResponseEntity<JSONObject> response = trackController.postTrack(file);
+			assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+			assertEquals("UNALLOWED CONTENT TYPE", response.getBody().get("message"));
 		}
 	}
 
