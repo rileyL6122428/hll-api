@@ -48,7 +48,7 @@ public class TrackController {
 		this.s3 = s3;
 	}
 	
-	@PostMapping(value="/api/private/track")
+	@PostMapping(value="/api/public/track")
 	@CrossOrigin
 	public ResponseEntity<String> postTrack(
 		@RequestHeader(value="Authorization") String authHeader,
@@ -58,18 +58,25 @@ public class TrackController {
 		ResponseEntity<String> response;
 		
 		try {
-			s3.putObject(
-				PutObjectRequest.builder()
-					.bucket(bucketName)
-					.key(audioFile.getName())
-					.build(),
+			if (audioFile.getContentType().equalsIgnoreCase("audio/mp3")) {
+				s3.putObject(
+					PutObjectRequest.builder()
+						.bucket(bucketName)
+						.key("audio/" + audioFile.getOriginalFilename())
+						.build(),
+						
 					RequestBody.fromBytes(audioFile.getBytes())
-			);
+				);
+					
+				response = ResponseEntity.ok("UPLOAD SUCCEEDED.");
+					
+			} else {
+				throw new RuntimeException("CONTENT TYPE OTHER THAN audio/mp3 NOT ALLOWED");
+			}
 			
-			response = ResponseEntity.ok("UPLOAD SUCCEEDED.");
-			
-		} catch (AwsServiceException | SdkClientException | IOException exception) {
+		} catch (Exception exception) {
 			exception.printStackTrace();
+			
 			response = ResponseEntity
 				.status(HttpStatus.INTERNAL_SERVER_ERROR)
 				.body("UPLOAD FAILED.");
