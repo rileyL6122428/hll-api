@@ -1,26 +1,23 @@
 package com.example.hllapi.controllers;
 
+import static java.util.Arrays.asList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-
-import static java.util.Arrays.asList;
 
 import java.util.Iterator;
 import java.util.List;
 
 import org.json.JSONObject;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.core.io.InputStreamResource;
-import org.springframework.data.domain.Example;
-import org.springframework.data.domain.ExampleMatcher;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.multipart.MultipartFile;
@@ -29,9 +26,11 @@ import com.example.hllapi.model.Track;
 import com.example.hllapi.repository.TrackRepo;
 
 import software.amazon.awssdk.core.ResponseInputStream;
+import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectResponse;
+import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
 class TrackControllerTest {
 
@@ -141,6 +140,50 @@ class TrackControllerTest {
 			ResponseEntity<JSONObject> response = trackController.postTrack(file);
 			assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
 			assertEquals("UNALLOWED CONTENT TYPE", response.getBody().get("message"));
+		}
+		
+		@Test
+		void returnsAnInternalServerErrorResponseIfAnExceptionOccurs() throws Exception {
+			when(s3.putObject(any(PutObjectRequest.class), any(RequestBody.class)))
+				.thenThrow(new RuntimeException("EXAMPLE_RUNTIME_EXCEPTION"));
+			
+			ResponseEntity<JSONObject> response = trackController.postTrack(file);
+			
+			assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
+			assertEquals("UPLOAD FAILED", response.getBody().get("message"));
+		}
+		
+		@Test
+		void returnsASuccessResponseWhenAnMp3IsSuccessfullyUploaded() throws Exception {
+			when(file.getContentType()).thenReturn("audio/mp3");
+			when(file.getOriginalFilename()).thenReturn("EXAMPLE_ORIGINAL_FILENAME");
+			when(file.getBytes()).thenReturn(new byte[] {});
+			
+			ResponseEntity<JSONObject> response = trackController.postTrack(file);
+			
+			assertEquals(HttpStatus.OK, response.getStatusCode());
+			assertEquals("UPLOAD SUCCEEDED", response.getBody().get("message"));
+		}
+		
+		@Test
+		void callsS3ClientWithAppropriateArguments() throws Exception {
+			ArgumentCaptor<PutObjectRequest> putObjectRequestCaptor = ArgumentCaptor.forClass(PutObjectRequest.class);
+			ArgumentCaptor<RequestBody> requestBodyCaptor = ArgumentCaptor.forClass(RequestBody.class);
+			
+			when(s3.putObject(putObjectRequestCaptor.capture(), requestBodyCaptor.capture())).thenReturn(null);
+			
+			when(file.getContentType()).thenReturn("audio/mp3");
+			when(file.getOriginalFilename()).thenReturn("EXAMPLE_ORIGINAL_FILENAME");
+			when(file.getBytes()).thenReturn(new byte[] {});
+			
+			trackController.postTrack(file);
+			
+			PutObjectRequest putObjectRequest = putObjectRequestCaptor.getValue(); 
+			assertEquals(bucketName, putObjectRequest.bucket());
+			assertEquals("audio/EXAMPLE_ORIGINAL_FILENAME", putObjectRequest.key());
+			
+			RequestBody requestBody = requestBodyCaptor.getValue();
+			assertEquals(0, requestBody.contentLength()); // Verifies that the request body is the empty byte array passed in above
 		}
 	}
 

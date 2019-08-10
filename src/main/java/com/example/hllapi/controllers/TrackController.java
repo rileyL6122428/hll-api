@@ -1,6 +1,5 @@
 package com.example.hllapi.controllers;
 
-import java.io.IOException;
 import java.util.List;
 
 import org.json.JSONObject;
@@ -14,7 +13,6 @@ import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.multipart.MultipartFile;
@@ -22,9 +20,7 @@ import org.springframework.web.multipart.MultipartFile;
 import com.example.hllapi.model.Track;
 import com.example.hllapi.repository.TrackRepo;
 
-import software.amazon.awssdk.awscore.exception.AwsServiceException;
 import software.amazon.awssdk.core.ResponseInputStream;
-import software.amazon.awssdk.core.exception.SdkClientException;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
@@ -68,29 +64,40 @@ public class TrackController {
 					RequestBody.fromBytes(audioFile.getBytes())
 				);
 					
-				response = ResponseEntity.ok(new JSONObject() {{
-					put("message", "UPLOAD SUCEEDED");
-				}});
+				response = uploadSucceededResponse();
 					
 			} else {
-				response = ResponseEntity
-					.badRequest()
-					.body(new JSONObject() {{
-						put("message", "UNALLOWED CONTENT TYPE");
-					}});
+				response = unallowedContentTypeResponse();
 			}
 			
 		} catch (Exception exception) {
 			exception.printStackTrace();
-			
-			response = ResponseEntity
-				.status(HttpStatus.INTERNAL_SERVER_ERROR)
-				.body(new JSONObject() {{
-					put("message", "UPLOAD FAILED");
-				}});
+			response = uploadFailedResponse();
 		}
 		
 		return response;
+	}
+	
+	private ResponseEntity<JSONObject> uploadSucceededResponse() throws Exception {
+		return ResponseEntity.ok(new JSONObject() {{
+			put("message", "UPLOAD SUCCEEDED");
+		}});
+	}
+	
+	private ResponseEntity<JSONObject> unallowedContentTypeResponse() throws Exception {
+		return ResponseEntity
+		.badRequest()
+		.body(new JSONObject() {{
+			put("message", "UNALLOWED CONTENT TYPE");
+		}});
+	}
+	
+	private ResponseEntity<JSONObject> uploadFailedResponse() throws Exception {
+		return ResponseEntity
+			.status(HttpStatus.INTERNAL_SERVER_ERROR)
+			.body(new JSONObject() {{
+				put("message", "UPLOAD FAILED");
+			}});
 	}
 	
 	@GetMapping(value="/api/public/track/{trackId}/stream", produces="audio/mpeg")
