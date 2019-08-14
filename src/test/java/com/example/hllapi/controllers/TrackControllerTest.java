@@ -4,7 +4,6 @@ import static java.util.Arrays.asList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -12,7 +11,6 @@ import static org.mockito.Mockito.when;
 import java.util.Iterator;
 import java.util.List;
 
-import org.json.JSONObject;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -137,9 +135,9 @@ class TrackControllerTest {
 		@Test
 		void returnsABadRequestStatusCodeWhenFileIsNotAnMp3() throws Exception {
 			when(file.getContentType()).thenReturn("NOT_AN_MP3");
-			ResponseEntity<JSONObject> response = trackController.postTrack(file);
+			ResponseEntity<RespBody> response = trackController.postTrack(file);
 			assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
-			assertEquals("UNALLOWED CONTENT TYPE", response.getBody().get("message"));
+			assertEquals("UNALLOWED CONTENT TYPE", response.getBody().getMessage());
 		}
 		
 		@Test
@@ -147,10 +145,10 @@ class TrackControllerTest {
 			when(s3.putObject(any(PutObjectRequest.class), any(RequestBody.class)))
 				.thenThrow(new RuntimeException("EXAMPLE_RUNTIME_EXCEPTION"));
 			
-			ResponseEntity<JSONObject> response = trackController.postTrack(file);
+			ResponseEntity<RespBody> response = trackController.postTrack(file);
 			
 			assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
-			assertEquals("UPLOAD FAILED", response.getBody().get("message"));
+			assertEquals("UPLOAD FAILED", response.getBody().getMessage());
 		}
 		
 		@Test
@@ -159,10 +157,10 @@ class TrackControllerTest {
 			when(file.getOriginalFilename()).thenReturn("EXAMPLE_ORIGINAL_FILENAME");
 			when(file.getBytes()).thenReturn(new byte[] {});
 			
-			ResponseEntity<JSONObject> response = trackController.postTrack(file);
+			ResponseEntity<RespBody> response = trackController.postTrack(file);
 			
 			assertEquals(HttpStatus.OK, response.getStatusCode());
-			assertEquals("UPLOAD SUCCEEDED", response.getBody().get("message"));
+			assertEquals("UPLOAD SUCCEEDED", response.getBody().getMessage());
 		}
 		
 		@Test

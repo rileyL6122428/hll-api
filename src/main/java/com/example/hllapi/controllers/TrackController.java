@@ -47,11 +47,11 @@ public class TrackController {
 	
 	@PostMapping(value="/api/private/track")
 	@CrossOrigin
-	public ResponseEntity<JSONObject> postTrack(
+	public ResponseEntity<RespBody> postTrack(
 		@RequestParam("audio-file") MultipartFile audioFile
 	) throws Exception {
 		
-		ResponseEntity<JSONObject> response;
+		ResponseEntity<RespBody> response;
 		
 		try {
 			if (audioFile.getContentType().equalsIgnoreCase("audio/mp3")) {
@@ -64,40 +64,20 @@ public class TrackController {
 					RequestBody.fromBytes(audioFile.getBytes())
 				);
 					
-				response = uploadSucceededResponse();
+				response = ResponseEntity.ok(new RespBody("UPLOAD SUCCEEDED"));
 					
 			} else {
-				response = unallowedContentTypeResponse();
+				response = ResponseEntity.badRequest().body(new RespBody("UNALLOWED CONTENT TYPE"));
 			}
 			
 		} catch (Exception exception) {
 			exception.printStackTrace();
-			response = uploadFailedResponse();
+			response = ResponseEntity
+					.status(HttpStatus.INTERNAL_SERVER_ERROR)
+					.body(new RespBody("UPLOAD FAILED"));
 		}
 		
 		return response;
-	}
-	
-	private ResponseEntity<JSONObject> uploadSucceededResponse() throws Exception {
-		return ResponseEntity.ok(new JSONObject() {{
-			put("message", "UPLOAD SUCCEEDED");
-		}});
-	}
-	
-	private ResponseEntity<JSONObject> unallowedContentTypeResponse() throws Exception {
-		return ResponseEntity
-		.badRequest()
-		.body(new JSONObject() {{
-			put("message", "UNALLOWED CONTENT TYPE");
-		}});
-	}
-	
-	private ResponseEntity<JSONObject> uploadFailedResponse() throws Exception {
-		return ResponseEntity
-			.status(HttpStatus.INTERNAL_SERVER_ERROR)
-			.body(new JSONObject() {{
-				put("message", "UPLOAD FAILED");
-			}});
 	}
 	
 	@GetMapping(value="/api/public/track/{trackId}/stream", produces="audio/mpeg")
@@ -129,4 +109,21 @@ public class TrackController {
 		this.bucketName = bucketName;
 	}
 
+}
+
+class RespBody {
+	
+	private String message;
+	
+	public RespBody(String message) {
+		this.message = message;
+	}
+	
+	public String getMessage() {
+		return message;
+	}
+	
+	public void setMessage(String message) {
+		this.message = message;
+	}
 }
