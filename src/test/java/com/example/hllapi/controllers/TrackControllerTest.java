@@ -178,7 +178,7 @@ class TrackControllerTest {
 			
 			PutObjectRequest putObjectRequest = putObjectRequestCaptor.getValue(); 
 			assertEquals(bucketName, putObjectRequest.bucket());
-			assertEquals("audio/EXAMPLE_ORIGINAL_FILENAME", putObjectRequest.key());
+			assertEquals("audio/EXAMPLE_ORIGINAL_FILENAME.mp3", putObjectRequest.key());
 			
 			RequestBody requestBody = requestBodyCaptor.getValue();
 			assertEquals(0, requestBody.contentLength()); // Verifies that the request body is the empty byte array passed in above

@@ -57,7 +57,7 @@ public class TrackController {
 				s3.putObject(
 					PutObjectRequest.builder()
 						.bucket(bucketName)
-						.key("audio/" + audioFile.getOriginalFilename())
+						.key("audio/" + audioFile.getOriginalFilename() + ".mp3")
 						.build(),
 						
 					RequestBody.fromBytes(audioFile.getBytes())
