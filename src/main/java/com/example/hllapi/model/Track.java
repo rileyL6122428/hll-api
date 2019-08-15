@@ -9,8 +9,8 @@ public class Track {
 	@Id
 	private String id;
 	private String s3Key;
-	
-	
+	private String userId;
+
 	public String getId() {
 		return id;
 	}
@@ -25,5 +25,13 @@ public class Track {
 
 	public void setS3Key(String s3Key) {
 		this.s3Key = s3Key;
+	}
+	
+	public String getUserId() {
+		return userId;
+	}
+	
+	public void setUserId(String userId) {
+		this.userId = userId;
 	}
 }

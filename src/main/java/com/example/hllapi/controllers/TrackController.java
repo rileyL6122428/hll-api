@@ -12,10 +12,13 @@ import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.multipart.MultipartFile;
 
+import com.auth0.jwt.JWT;
+import com.auth0.jwt.interfaces.DecodedJWT;
 import com.example.hllapi.model.Track;
 import com.example.hllapi.repository.TrackRepo;
 
@@ -47,23 +50,27 @@ public class TrackController {
 	@PostMapping(value="/api/private/track")
 	@CrossOrigin
 	public ResponseEntity<RespBody> postTrack(
-		@RequestParam("audio-file") MultipartFile audioFile
+		@RequestParam("audio-file") MultipartFile audioFile,
+		@RequestHeader("Authorization") String authHeader
 	) throws Exception {
 		
 		ResponseEntity<RespBody> response;
 		
 		try {
 			if (audioFile.getContentType().equalsIgnoreCase("audio/mp3")) {
-				s3.putObject(
-					PutObjectRequest.builder()
-						.bucket(bucketName)
-						.key("audio/" + audioFile.getOriginalFilename() + ".mp3")
-						.build(),
-						
-					RequestBody.fromBytes(audioFile.getBytes())
-				);
+				String s3Key = "audio/" + audioFile.getOriginalFilename() + ".mp3";
+				uploadToS3(audioFile, s3Key);
+				
+				DecodedJWT jwt = JWT.decode(authHeader.substring(6));
+				Track savedTrack = trackRepo.save(new Track() {{
+					setS3Key(s3Key);
+					setUserId(jwt.getClaim("name").asString());
+				}});
 					
-				response = ResponseEntity.ok(new RespBody("UPLOAD SUCCEEDED"));
+				response = ResponseEntity.ok(new RespBody() {{
+					setMessage("UPLOAD SUCCEEDED");
+					setTrack(savedTrack);
+				}});
 					
 			} else {
 				response = ResponseEntity.badRequest().body(new RespBody("UNALLOWED CONTENT TYPE"));
@@ -77,6 +84,17 @@ public class TrackController {
 		}
 		
 		return response;
+	}
+	
+	private void uploadToS3(MultipartFile file, String key) throws Exception {
+		s3.putObject(
+			PutObjectRequest.builder()
+				.bucket(bucketName)
+				.key(key)
+				.build(),
+				
+			RequestBody.fromBytes(file.getBytes())
+		);
 	}
 	
 	@GetMapping(value="/api/public/track/{trackId}/stream", produces="audio/mpeg")
@@ -113,6 +131,9 @@ public class TrackController {
 class RespBody {
 	
 	private String message;
+	private Track track;
+	
+	public RespBody() { }
 	
 	public RespBody(String message) {
 		this.message = message;
@@ -124,5 +145,13 @@ class RespBody {
 	
 	public void setMessage(String message) {
 		this.message = message;
+	}
+
+	public Track getTrack() {
+		return track;
+	}
+
+	public void setTrack(Track track) {
+		this.track = track;
 	}
 }
