@@ -153,7 +153,6 @@ class RespBody {
 	
 	private String message;
 	private Track track;
-	private Iterable<Track> tracks;
 	
 	public RespBody() { }
 	
