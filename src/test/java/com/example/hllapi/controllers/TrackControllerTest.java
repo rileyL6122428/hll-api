@@ -12,6 +12,7 @@ import java.util.Iterator;
 import java.util.List;
 
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -143,9 +144,19 @@ class TrackControllerTest {
 		}
 		
 		@Test
-		void returnsAnInternalServerErrorResponseIfAnExceptionOccurs() throws Exception {
+		void returnsAnInternalServerErrorResponseIfAnUploadExceptionOccurs() throws Exception {
 			when(s3.putObject(any(PutObjectRequest.class), any(RequestBody.class)))
 				.thenThrow(new RuntimeException("EXAMPLE_RUNTIME_EXCEPTION"));
+			
+			ResponseEntity<RespBody> response = trackController.postTrack(file, authHeader);
+			
+			assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
+			assertEquals("UPLOAD FAILED", response.getBody().getMessage());
+		}
+		
+		@Test
+		void returnsAnInternalServerErrorResponseIfTrackRepoDotSaveThrows() throws Exception {
+			when(trackRepo.save(any(Track.class))).thenThrow(new RuntimeException("EXAMPLE_RUNTIME_EXCEPTION"));
 			
 			ResponseEntity<RespBody> response = trackController.postTrack(file, authHeader);
 			
