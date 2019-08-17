@@ -8,11 +8,11 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -213,6 +213,40 @@ class TrackControllerTest {
 				assertEquals("audio/EXAMPLE_ORIGINAL_FILENAME.mp3", storedTrack.getS3Key());
 				assertEquals("rileylittlefield@ymail.com", storedTrack.getUserId());
 			}
+		}
+		
+	}
+	
+	@Nested
+	class GetTracks {
+		
+		final String artistId = "EXAMPLE_ARTIST_ID";
+		
+		@Test
+		void pullsTracksFromTrackRepo() throws Exception {
+			trackController.getTracks(artistId);
+			verify(trackRepo).findAllByUserId(artistId);
+		}
+		
+		
+		@Test
+		void returnsTracksFoundByTrackRepo() throws Exception {
+			Iterable<Track> tracks = new ArrayList<Track>() {{
+				add(Track.Builder().build());
+			}};
+			when(trackRepo.findAllByUserId(any(String.class))).thenReturn(tracks);
+			
+			ResponseEntity<Object> response = trackController.getTracks(artistId);
+			
+			assertEquals(tracks, response.getBody());
+			assertEquals(HttpStatus.OK, response.getStatusCode());
+		}
+		
+		@Test
+		void returnsAnInternalServerErrorIfTheTrackRepoThrows() throws Exception {
+			when(trackRepo.findAllByUserId(any(String.class))).thenThrow(new RuntimeException("RUNTIME EXCEPION"));
+			ResponseEntity<Object> response = trackController.getTracks(artistId);
+			assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
 		}
 		
 	}

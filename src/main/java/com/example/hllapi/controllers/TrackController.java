@@ -62,10 +62,12 @@ public class TrackController {
 				uploadToS3(audioFile, s3Key);
 				
 				DecodedJWT jwt = JWT.decode(authHeader.substring(6));
-				Track savedTrack = trackRepo.save(new Track() {{
-					setS3Key(s3Key);
-					setUserId(jwt.getClaim("name").asString());
-				}});
+				Track savedTrack = trackRepo.save(
+					Track.Builder()
+						.setS3Key(s3Key)
+						.setUserId(jwt.getClaim("name").asString())
+						.build()
+				);
 					
 				response = ResponseEntity.ok(new RespBody() {{
 					setMessage("UPLOAD SUCCEEDED");
@@ -95,6 +97,25 @@ public class TrackController {
 				
 			RequestBody.fromBytes(file.getBytes())
 		);
+	}
+	
+	@GetMapping(value="/api/public/tracks")
+	public ResponseEntity<Object> getTracks(@RequestParam(name="artist-id") String artistId) throws Exception {
+		ResponseEntity<Object> response;
+		
+		try {
+			Iterable<Track> tracks = trackRepo.findAllByUserId(artistId);
+			response = ResponseEntity.ok(tracks);
+			
+		} catch (Exception exception) {
+			response = ResponseEntity
+				.status(HttpStatus.INTERNAL_SERVER_ERROR)
+				.body(new RespBody() {{
+					setMessage("RETRIEVE FAILED");
+				}});
+		}
+		
+		return response;
 	}
 	
 	@GetMapping(value="/api/public/track/{trackId}/stream", produces="audio/mpeg")
@@ -132,6 +153,7 @@ class RespBody {
 	
 	private String message;
 	private Track track;
+	private Iterable<Track> tracks;
 	
 	public RespBody() { }
 	

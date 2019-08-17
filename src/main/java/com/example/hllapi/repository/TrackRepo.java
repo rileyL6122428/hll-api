@@ -13,6 +13,8 @@ public interface TrackRepo extends MongoRepository<Track, String> {
 		Optional<Track> track = this.findById(trackId);
 		return track.isPresent() ? track.get() : null;
 	}
+	
+	public Iterable<Track> findAllByUserId(String userId);
 
 }
 
