@@ -21,6 +21,7 @@ import com.auth0.jwt.JWT;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.example.hllapi.model.Track;
 import com.example.hllapi.repository.TrackRepo;
+import com.example.hllapi.service.TrackMetadataParser;
 
 import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.core.sync.RequestBody;
@@ -34,6 +35,7 @@ public class TrackController {
 
 	private S3Client s3;
 	private TrackRepo trackRepo;
+	private TrackMetadataParser trackFileParser;
 	
 	@Value("${aws.s3.bucketName}")
 	private String bucketName;
@@ -41,10 +43,12 @@ public class TrackController {
 	@Autowired
 	public TrackController(
 		TrackRepo trackRepo,
-		S3Client s3
+		S3Client s3,
+		TrackMetadataParser trackFileParser
 	) {
 		this.trackRepo = trackRepo;
 		this.s3 = s3;
+		this.trackFileParser = trackFileParser;
 	}
 	
 	@PostMapping(value="/api/private/track")
@@ -66,6 +70,8 @@ public class TrackController {
 					Track.Builder()
 						.setS3Key(s3Key)
 						.setUserId(jwt.getClaim("name").asString())
+						.setName(audioFile.getOriginalFilename())
+						.setDuration(trackFileParser.getDuration(audioFile.getBytes()))
 						.build()
 				);
 					

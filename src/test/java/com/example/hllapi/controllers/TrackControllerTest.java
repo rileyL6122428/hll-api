@@ -23,6 +23,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.example.hllapi.model.Track;
 import com.example.hllapi.repository.TrackRepo;
+import com.example.hllapi.service.TrackMetadataParser;
 
 import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.core.sync.RequestBody;
@@ -35,6 +36,7 @@ class TrackControllerTest {
 
 	TrackController trackController;
 	TrackRepo trackRepo;
+	TrackMetadataParser trackFileParser;
 	S3Client s3;
 	String bucketName;
 	
@@ -43,10 +45,12 @@ class TrackControllerTest {
 		bucketName = "hey-look-listen";
 		trackRepo = mock(TrackRepo.class);
 		s3 = mock(S3Client.class);
+		trackFileParser = mock(TrackMetadataParser.class);
 		
 		trackController = new TrackController(
 			trackRepo,
-			s3
+			s3,
+			trackFileParser
 		);
 		trackController.setBucketName(bucketName);
 	}
@@ -203,15 +207,20 @@ class TrackControllerTest {
 			}
 			
 			@Test
-			void savesTrackIntoTrackRepo() throws Exception {
+			void savesTrackMetadataIntoTrackRepo() throws Exception {
 				ArgumentCaptor<Track> trackCaptor = ArgumentCaptor.forClass(Track.class);
 				when(trackRepo.save(trackCaptor.capture())).thenReturn(null);
+				
+				double EXAMPLE_DURATION = 1234d;
+				when(trackFileParser.getDuration(any(byte[].class))).thenReturn(EXAMPLE_DURATION);
 				
 				trackController.postTrack(file, authHeader);
 				
 				Track storedTrack = trackCaptor.getValue();
 				assertEquals("audio/EXAMPLE_ORIGINAL_FILENAME.mp3", storedTrack.getS3Key());
 				assertEquals("rileylittlefield@ymail.com", storedTrack.getUserId());
+				assertEquals(EXAMPLE_DURATION, storedTrack.getDuration());
+				assertEquals("EXAMPLE_ORIGINAL_FILENAME", storedTrack.getName());
 			}
 		}
 		
