@@ -1,11 +1,13 @@
 package com.example.hllapi.service;
 
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Mockito.any;
 
+import java.io.File;
 import java.util.Random;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -22,19 +24,19 @@ class TrackMetadataParserTest {
 	private TrackMetadataParser trackParser;
 	private FFprobe ffprobe;
 	private Random random;
-	private String tempFilepath;
+	private String directoryOfTempFile;
 	
 	@BeforeEach
 	public void setup() {
 		ffprobe = mock(FFprobe.class);
 		random = mock(Random.class);
-		tempFilepath = "/Users/rileylittlefield/hey-look-listen/PoC/temp-files";
+		directoryOfTempFile = "/Users/rileylittlefield/hey-look-listen/PoC/temp-files";
 		
 		trackParser = new TrackMetadataParser(
 			ffprobe,
 			random
 		);
-		trackParser.setTempFilepath(tempFilepath);
+		trackParser.setTempFilepath(directoryOfTempFile);
 	}
 
 	@Nested
@@ -42,6 +44,9 @@ class TrackMetadataParserTest {
 		
 		FFmpegProbeResult probeResult;
 		FFmpegFormat mpegFormat;
+		byte[] fileBytes;
+		float exampleRandomFloat;
+		double exampleMpegDuration;
 		
 		@BeforeEach
 		public void setup() throws Exception {
@@ -50,33 +55,36 @@ class TrackMetadataParserTest {
 			
 			when(ffprobe.probe(any(String.class))).thenReturn(probeResult);
 			when(probeResult.getFormat()).thenReturn(mpegFormat);
+			
+			fileBytes = new byte[]{};
+			
+			exampleRandomFloat = 1f;
+			when(random.nextFloat()).thenReturn(exampleRandomFloat);
+			
+			exampleMpegDuration = 2d;
+			mpegFormat.duration = exampleMpegDuration;
 		}
 		
 		@Test
 		void probesConfiguredFilepathWithFFProbe() throws Exception {
-			byte[] fileBytes = {};
-			
-			float exampleRandomFloat = 1f;
-			when(random.nextFloat()).thenReturn(exampleRandomFloat);
-			
 			trackParser.getDuration(fileBytes);
-			
-			verify(ffprobe).probe(tempFilepath + "/temp." + exampleRandomFloat + ".test");
+			verify(ffprobe).probe(directoryOfTempFile + "/temp." + exampleRandomFloat + ".test");
 		}
 		
 		@Test
 		void returnsTheDurationFoundOnTheMpegFormat() throws Exception {
-			byte[] fileBytes = {};
-			
-			float exampleRandomFloat = 1f;
-			when(random.nextFloat()).thenReturn(exampleRandomFloat);
-			
-			double exampleMpegDuration = 2d;
-			mpegFormat.duration = exampleMpegDuration;
-			
 			double duration = trackParser.getDuration(fileBytes);
-			
 			assertEquals(exampleMpegDuration, duration);
+		}
+		
+		@Test
+		void deletesTempFileFromfilesystem() throws Exception {		
+			trackParser.getDuration(fileBytes);
+			
+			File folder = new File(directoryOfTempFile);
+			for(File file : folder.listFiles()) {
+				assertNotEquals(directoryOfTempFile + "/temp." + exampleRandomFloat + ".test", file.getAbsolutePath());
+			}
 		}
 		
 	}
