@@ -142,7 +142,7 @@ class TrackControllerTest {
 		@Test
 		void returnsABadRequestStatusCodeWhenFileIsNotAnMp3() throws Exception {
 			when(file.getContentType()).thenReturn("NOT_AN_MP3");
-			ResponseEntity<RespBody> response = trackController.postTrack(file, authHeader);
+			ResponseEntity<ResponsePayload> response = trackController.postTrack(file, authHeader);
 			assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
 			assertEquals("UNALLOWED CONTENT TYPE", response.getBody().getMessage());
 		}
@@ -152,7 +152,7 @@ class TrackControllerTest {
 			when(s3.putObject(any(PutObjectRequest.class), any(RequestBody.class)))
 				.thenThrow(new RuntimeException("EXAMPLE_RUNTIME_EXCEPTION"));
 			
-			ResponseEntity<RespBody> response = trackController.postTrack(file, authHeader);
+			ResponseEntity<ResponsePayload> response = trackController.postTrack(file, authHeader);
 			
 			assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
 			assertEquals("UPLOAD FAILED", response.getBody().getMessage());
@@ -162,7 +162,7 @@ class TrackControllerTest {
 		void returnsAnInternalServerErrorResponseIfTrackRepoDotSaveThrows() throws Exception {
 			when(trackRepo.save(any(Track.class))).thenThrow(new RuntimeException("EXAMPLE_RUNTIME_EXCEPTION"));
 			
-			ResponseEntity<RespBody> response = trackController.postTrack(file, authHeader);
+			ResponseEntity<ResponsePayload> response = trackController.postTrack(file, authHeader);
 			
 			assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
 			assertEquals("UPLOAD FAILED", response.getBody().getMessage());
@@ -183,7 +183,7 @@ class TrackControllerTest {
 				Track returnedTrack = mock(Track.class);
 				when(trackRepo.save(any(Track.class))).thenReturn(returnedTrack);
 				
-				ResponseEntity<RespBody> response = trackController.postTrack(file, authHeader);
+				ResponseEntity<ResponsePayload> response = trackController.postTrack(file, authHeader);
 				assertEquals(HttpStatus.OK, response.getStatusCode());
 				assertEquals("UPLOAD SUCCEEDED", response.getBody().getMessage());
 				assertEquals(returnedTrack, response.getBody().getTrack());

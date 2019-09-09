@@ -53,12 +53,12 @@ public class TrackController {
 	
 	@PostMapping(value="/api/private/track")
 	@CrossOrigin
-	public ResponseEntity<RespBody> postTrack(
+	public ResponseEntity<TrackController.ResponsePayload> postTrack(
 		@RequestParam("audio-file") MultipartFile audioFile,
 		@RequestHeader("Authorization") String authHeader
 	) throws Exception {
 		
-		ResponseEntity<RespBody> response;
+		ResponseEntity<TrackController.ResponsePayload> response;
 		
 		try {
 			if (audioFile.getContentType().equalsIgnoreCase("audio/mp3")) {
@@ -82,20 +82,20 @@ public class TrackController {
 						.build()
 				);
 					
-				response = ResponseEntity.ok(new RespBody() {{
+				response = ResponseEntity.ok(new TrackController.ResponsePayload() {{
 					setMessage("UPLOAD SUCCEEDED");
 					setTrack(savedTrack);
 				}});
 					
 			} else {
-				response = ResponseEntity.badRequest().body(new RespBody("UNALLOWED CONTENT TYPE"));
+				response = ResponseEntity.badRequest().body(new TrackController.ResponsePayload("UNALLOWED CONTENT TYPE"));
 			}
 			
 		} catch (Exception exception) {
 			exception.printStackTrace();
 			response = ResponseEntity
 					.status(HttpStatus.INTERNAL_SERVER_ERROR)
-					.body(new RespBody("UPLOAD FAILED"));
+					.body(new TrackController.ResponsePayload("UPLOAD FAILED"));
 		}
 		
 		return response;
@@ -112,7 +112,7 @@ public class TrackController {
 		} catch (Exception exception) {
 			response = ResponseEntity
 				.status(HttpStatus.INTERNAL_SERVER_ERROR)
-				.body(new RespBody() {{
+				.body(new TrackController.ResponsePayload() {{
 					setMessage("RETRIEVE FAILED");
 				}});
 		}
@@ -149,32 +149,32 @@ public class TrackController {
 		this.bucketName = bucketName;
 	}
 
+	class ResponsePayload {
+		
+		private String message;
+		private Track track;
+		
+		public ResponsePayload() { }
+		
+		public ResponsePayload(String message) {
+			this.message = message;
+		}
+		
+		public String getMessage() {
+			return message;
+		}
+		
+		public void setMessage(String message) {
+			this.message = message;
+		}
+		
+		public Track getTrack() {
+			return track;
+		}
+		
+		public void setTrack(Track track) {
+			this.track = track;
+		}
+	}
 }
 
-class RespBody {
-	
-	private String message;
-	private Track track;
-	
-	public RespBody() { }
-	
-	public RespBody(String message) {
-		this.message = message;
-	}
-	
-	public String getMessage() {
-		return message;
-	}
-	
-	public void setMessage(String message) {
-		this.message = message;
-	}
-
-	public Track getTrack() {
-		return track;
-	}
-
-	public void setTrack(Track track) {
-		this.track = track;
-	}
-}
