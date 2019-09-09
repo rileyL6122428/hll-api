@@ -11,7 +11,6 @@ import java.io.File;
 import java.util.Random;
 
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
@@ -78,7 +77,7 @@ class TrackMetadataParserTest {
 		}
 		
 		@Test
-		void deletesTempFileFromfilesystem() throws Exception {		
+		void deletesTempFileFromFilesystem() throws Exception {		
 			trackParser.getDuration(fileBytes);
 			
 			File folder = new File(directoryOfTempFile);
