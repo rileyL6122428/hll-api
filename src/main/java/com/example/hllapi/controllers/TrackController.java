@@ -63,7 +63,14 @@ public class TrackController {
 		try {
 			if (audioFile.getContentType().equalsIgnoreCase("audio/mp3")) {
 				String s3Key = "audio/" + audioFile.getOriginalFilename() + ".mp3";
-				uploadToS3(audioFile, s3Key);
+				s3.putObject(
+						PutObjectRequest.builder()
+							.bucket(bucketName)
+							.key(s3Key)
+							.build(),
+							
+						RequestBody.fromBytes(audioFile.getBytes())
+					);
 				
 				DecodedJWT jwt = JWT.decode(authHeader.substring(6));
 				Track savedTrack = trackRepo.save(
@@ -92,17 +99,6 @@ public class TrackController {
 		}
 		
 		return response;
-	}
-	
-	private void uploadToS3(MultipartFile file, String key) throws Exception {
-		s3.putObject(
-			PutObjectRequest.builder()
-				.bucket(bucketName)
-				.key(key)
-				.build(),
-				
-			RequestBody.fromBytes(file.getBytes())
-		);
 	}
 	
 	@GetMapping(value="/api/public/tracks")
