@@ -8,6 +8,8 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.io.File;
+import java.io.InputStream;
+import java.util.Properties;
 import java.util.Random;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -26,10 +28,14 @@ class TrackMetadataParserTest {
 	private String directoryOfTempFile;
 	
 	@BeforeEach
-	public void setup() {
+	public void setup() throws Exception {
+		InputStream inputStream = ClassLoader.getSystemResourceAsStream("unittest.properties");
+		Properties properties = new Properties();
+		properties.load(inputStream);
+		directoryOfTempFile = properties.getProperty("fileparser.tempfile.location");
+		
 		ffprobe = mock(FFprobe.class);
 		random = mock(Random.class);
-		directoryOfTempFile = "/Users/rileylittlefield/hey-look-listen/PoC/temp-files";
 		
 		trackParser = new TrackMetadataParser(
 			ffprobe,
