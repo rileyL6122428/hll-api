@@ -10,6 +10,4 @@ public class HllApiApplication {
 		SpringApplication.run(HllApiApplication.class, args);
 	}
 	
-
 }
-
