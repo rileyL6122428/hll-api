@@ -26,6 +26,7 @@ import com.example.hllapi.service.TrackMetadataParser;
 import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
@@ -141,6 +142,17 @@ public class TrackController {
 		return ResponseEntity.ok(tracks);
 	}
 
+	public void deleteTrack(String trackId, String authHeader) {
+		Track track = trackRepo.byId(trackId);
+		s3.deleteObject(
+			DeleteObjectRequest.builder()
+				.key(track.getS3Key())
+				.bucket(bucketName)
+				.build()
+		);
+		trackRepo.delete(track);
+	}
+	
 	public String getBucketName() {
 		return bucketName;
 	}
@@ -176,5 +188,6 @@ public class TrackController {
 			this.track = track;
 		}
 	}
+
 }
 

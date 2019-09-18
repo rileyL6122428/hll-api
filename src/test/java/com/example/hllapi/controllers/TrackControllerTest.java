@@ -13,6 +13,7 @@ import java.util.Iterator;
 import java.util.List;
 
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -28,6 +29,7 @@ import com.example.hllapi.service.TrackMetadataParser;
 import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
@@ -227,6 +229,48 @@ class TrackControllerTest {
 	}
 	
 	@Nested
+	class DeleteTrack {
+		
+		String authHeader;
+		String trackId;
+		Track track;
+		
+		@BeforeEach
+		void setup() {
+			authHeader = "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsImtpZCI6Ik1VTTNSVU5HUXpWQlJVSTFNMFEzUXpZd09UWXpNa1ZFTXpNeE9ETTROMEpFUkRBMlJqQTBPUSJ9.eyJuaWNrbmFtZSI6InJpbGV5bGl0dGxlZmllbGQiLCJuYW1lIjoicmlsZXlsaXR0bGVmaWVsZEB5bWFpbC5jb20iLCJwaWN0dXJlIjoiaHR0cHM6Ly9zLmdyYXZhdGFyLmNvbS9hdmF0YXIvNTgwYTA4ODMxNDRiMWNmNWM5ZjFhNTFmY2Q0MWVhZjg_cz00ODAmcj1wZyZkPWh0dHBzJTNBJTJGJTJGY2RuLmF1dGgwLmNvbSUyRmF2YXRhcnMlMkZyaS5wbmciLCJ1cGRhdGVkX2F0IjoiMjAxOS0wOC0xNFQwMjo1OTo0OS4wNjdaIiwiaXNzIjoiaHR0cHM6Ly9kZXYta2ZhYXQ4LTguYXV0aDAuY29tLyIsInN1YiI6ImF1dGgwfDVjYmEyZTJkODFhYzkwMTAzM2JhMDQ0ZiIsImF1ZCI6IjhzMHN2WlZFZlMyeENOdzgyaXZnR3IzWUZVNE9ReDduIiwiaWF0IjoxNTY1ODMzNjY1LCJleHAiOjE1NjU4Njk2NjUsImF0X2hhc2giOiIyMWRFRVlaQUJmemlMSDZVcVNCa0VnIiwibm9uY2UiOiJqNDAyWn5pN3FBcTFrZFRhMVVKbWd4WVFxOXNodkZMSCJ9.B9L6Iu8Og7BbvEEem9yJnRzGdA2ZofFob_IVu3vqW2oLZ8NlJD_bBWvbilFaqcVFs3EutEc2xyzJAWcbNpU86KMYD8CVOm8Y0awd-mCt-DhPeN6wEd0j6GpSYc1-MyGW0ScD8fpMKU_jfEASeGHKVcj9r1aZIWSWIsvHTLgGtcV13MDav3IN2NF3yNJQSFPm_nIyAas2vV0Oe41e_VFFvsE8HR4o94L6kiyKZ5ZCl55jegvM7ifbbRuFTpnxMnxLB6YhFKbw8rxi9n4p960ugsfZkOfTBOj4pnCKrpJxy1rNWTRcYqKFQpc6ncAHULxE2LP1MEqBA9od-gVJhpwO2g";
+			trackId = "EXAMPLE_TRACK_ID";
+			track = mock(Track.class);
+			when(trackRepo.byId(trackId)).thenReturn(track);
+		}
+		
+		@Nested
+		class HappyPath {
+
+			@Test
+			void deletesTrackFromTrackRepo() {
+				trackController.deleteTrack(trackId, authHeader);
+				verify(trackRepo).delete(track);
+			}
+			
+			@Test
+			void deletesTrackFromS3() {
+				ArgumentCaptor<DeleteObjectRequest> deleteObjReqCaptor  = ArgumentCaptor.forClass(DeleteObjectRequest.class);
+				when(s3.deleteObject(deleteObjReqCaptor.capture())).thenReturn(null);
+				
+				String s3Key = "EXAMPLE_KEY_VALUE";
+				when(track.getS3Key()).thenReturn(s3Key);
+				
+				trackController.deleteTrack(trackId, authHeader);
+				
+				verify(s3).deleteObject(any(DeleteObjectRequest.class));
+				DeleteObjectRequest deleteObjectRequest = deleteObjReqCaptor.getValue();
+				assertEquals(bucketName, deleteObjectRequest.bucket());
+				assertEquals(s3Key, deleteObjectRequest.key());
+			}
+		}
+	}
+	
+	@Nested
 	class GetTracks {
 		
 		final String artistId = "EXAMPLE_ARTIST_ID";
@@ -259,5 +303,6 @@ class TrackControllerTest {
 		}
 		
 	}
+	
 
 }
