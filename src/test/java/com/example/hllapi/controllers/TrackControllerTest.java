@@ -3,7 +3,9 @@ package com.example.hllapi.controllers;
 import static java.util.Arrays.asList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -28,6 +30,7 @@ import com.example.hllapi.service.TrackMetadataParser;
 
 import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.core.sync.RequestBody;
+import software.amazon.awssdk.http.HttpStatusCode;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
@@ -243,6 +246,17 @@ class TrackControllerTest {
 			when(trackRepo.byId(trackId)).thenReturn(track);
 		}
 		
+		@Test
+		void returnsAnErrorResponseWhenRemovalFromTrackRepoFails() {
+			doThrow(new RuntimeException("EXAMPLE RUNTIME ERROR")).when(trackRepo).delete(track);
+			ResponseEntity<Object> response = trackController.deleteTrack(trackId, authHeader);
+			
+			TrackController.ResponsePayload responsePayload = (TrackController.ResponsePayload)response.getBody();
+			assertNull(responsePayload.getTrack());
+			assertEquals("ERROR WITH TRACK DELETION", responsePayload.getMessage());
+			assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
+		}
+		
 		@Nested
 		class HappyPath {
 
@@ -266,6 +280,16 @@ class TrackControllerTest {
 				DeleteObjectRequest deleteObjectRequest = deleteObjReqCaptor.getValue();
 				assertEquals(bucketName, deleteObjectRequest.bucket());
 				assertEquals(s3Key, deleteObjectRequest.key());
+			}
+			
+			@Test
+			void returnsDeletedTrack() {
+				ResponseEntity<Object> response = trackController.deleteTrack(trackId, authHeader);
+				
+				TrackController.ResponsePayload responsePayload = (TrackController.ResponsePayload)response.getBody();
+				assertEquals(track, responsePayload.getTrack());
+				assertNull(responsePayload.getMessage());
+				assertEquals(HttpStatus.OK, response.getStatusCode());
 			}
 		}
 	}

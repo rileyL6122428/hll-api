@@ -25,6 +25,7 @@ import com.example.hllapi.service.TrackMetadataParser;
 
 import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.core.sync.RequestBody;
+import software.amazon.awssdk.http.HttpStatusCode;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
@@ -142,15 +143,31 @@ public class TrackController {
 		return ResponseEntity.ok(tracks);
 	}
 
-	public void deleteTrack(String trackId, String authHeader) {
-		Track track = trackRepo.byId(trackId);
-		s3.deleteObject(
-			DeleteObjectRequest.builder()
-				.key(track.getS3Key())
-				.bucket(bucketName)
-				.build()
-		);
-		trackRepo.delete(track);
+	public ResponseEntity<Object> deleteTrack(String trackId, String authHeader) {
+		ResponseEntity<Object> response;
+		
+		try {			
+			Track track = trackRepo.byId(trackId);
+			s3.deleteObject(
+					DeleteObjectRequest.builder()
+					.key(track.getS3Key())
+					.bucket(bucketName)
+					.build()
+					);
+			trackRepo.delete(track);
+			
+			response = ResponseEntity.ok(new ResponsePayload() {{
+				setTrack(track);
+			}});
+		} catch (Exception exception) {
+			response = ResponseEntity
+				.status(HttpStatusCode.INTERNAL_SERVER_ERROR)
+				.body(new ResponsePayload() {{
+					setMessage("ERROR WITH TRACK DELETION");
+				}});
+		}
+		
+		return response;
 	}
 	
 	public String getBucketName() {
