@@ -7,9 +7,12 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -28,9 +31,9 @@ import com.example.hllapi.model.Track;
 import com.example.hllapi.repository.TrackRepo;
 import com.example.hllapi.service.TrackMetadataParser;
 
+import software.amazon.awssdk.awscore.exception.AwsServiceException;
 import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.core.sync.RequestBody;
-import software.amazon.awssdk.http.HttpStatusCode;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
@@ -253,8 +256,41 @@ class TrackControllerTest {
 			
 			TrackController.ResponsePayload responsePayload = (TrackController.ResponsePayload)response.getBody();
 			assertNull(responsePayload.getTrack());
-			assertEquals("ERROR WITH TRACK DELETION", responsePayload.getMessage());
+			assertEquals("UNABLE TO DELETE TRACK", responsePayload.getMessage());
 			assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
+		}
+		
+		@Test
+		void logsAnErrorWhenTrackS3DeletionFails() {
+			ByteArrayOutputStream errorContent = new ByteArrayOutputStream();
+			PrintStream originalError = System.err;
+			System.setErr(new PrintStream(errorContent));
+			
+			String s3Key = "EXAMPLE_KEY_VALUE";
+			when(track.getS3Key()).thenReturn(s3Key);
+			
+			doThrow(mock(AwsServiceException.class))
+				.when(s3).deleteObject(any(DeleteObjectRequest.class));
+			
+			trackController.deleteTrack(trackId, authHeader);
+			
+			assertEquals("ERROR DELETEING TRACK FROM S3 WITH KEY " + s3Key + "\n", errorContent.toString());
+			
+			System.setErr(originalError);
+		}
+		
+		@Disabled
+		@Test
+		void returnsSuccessRsponseWhenTrackIsDeletedFromTrackRepoButTrackS3DeletionFails() {
+			doThrow(new RuntimeException("EXAMPLE RUNTIME ERROR"))
+				.when(s3).deleteObject(any(DeleteObjectRequest.class));
+		}
+		
+		@Test
+		void doesNotCallS3DeleteOperationWhenTrackRepoDeletionFails() {
+			doThrow(new RuntimeException("EXAMPLE RUNTIME ERROR")).when(trackRepo).delete(track);
+			trackController.deleteTrack(trackId, authHeader);
+			verify(s3, times(0)).deleteObject(any(DeleteObjectRequest.class));
 		}
 		
 		@Nested
