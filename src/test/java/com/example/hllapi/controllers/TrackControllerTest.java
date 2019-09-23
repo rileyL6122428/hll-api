@@ -279,11 +279,17 @@ class TrackControllerTest {
 			System.setErr(originalError);
 		}
 		
-		@Disabled
 		@Test
 		void returnsSuccessRsponseWhenTrackIsDeletedFromTrackRepoButTrackS3DeletionFails() {
-			doThrow(new RuntimeException("EXAMPLE RUNTIME ERROR"))
+			doThrow(mock(AwsServiceException.class))
 				.when(s3).deleteObject(any(DeleteObjectRequest.class));
+			
+			ResponseEntity<Object> response = trackController.deleteTrack(trackId, authHeader);
+			assertEquals(HttpStatus.OK, response.getStatusCode());
+			
+			TrackController.ResponsePayload responsePayload = (TrackController.ResponsePayload)response.getBody();
+			assertEquals(track, responsePayload.getTrack());
+			assertNull(responsePayload.getMessage());
 		}
 		
 		@Test
