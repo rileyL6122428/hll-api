@@ -150,12 +150,17 @@ public class TrackController {
 	@DeleteMapping(value="/api/private/track/{trackId}")
 	public ResponseEntity<Object> deleteTrack(@PathVariable String trackId, String authHeader) {
 		ResponseEntity<Object> response;
+		DecodedJWT jwt = JWT.decode(authHeader.substring(6));
 		Track track = trackRepo.byId(trackId);
 		
 		try {
-			trackRepo.delete(track);
-			deleteFromS3(track);
-			response = successfulDeleteResponse(track);
+			if (jwt.getClaim("name").asString().equals(track.getUserId())) {
+				trackRepo.delete(track);
+				deleteFromS3(track);
+				response = successfulDeleteResponse(track);				
+			} else {
+				response = unauthorizedDeleteResponse();
+			}
 			
 		} catch (AwsServiceException | SdkClientException exception) {
 			System.err.println("ERROR DELETEING TRACK FROM S3 WITH KEY " + track.getS3Key());
@@ -167,6 +172,7 @@ public class TrackController {
 		
 		return response;
 	}
+
 
 	private void deleteFromS3(Track track) throws AwsServiceException, SdkClientException, S3Exception {
 		s3.deleteObject(
@@ -181,6 +187,14 @@ public class TrackController {
 		return ResponseEntity.ok(new ResponsePayload() {{
 			setTrack(track);
 		}});
+	}
+	
+	private ResponseEntity<Object> unauthorizedDeleteResponse() {
+		return ResponseEntity
+				.status(HttpStatus.UNAUTHORIZED)
+				.body(new ResponsePayload() {{
+					setMessage("USER IS NOT AUTHORIZED TO DELETE REQUESTED TRACK");
+				}});
 	}
 	
 	private ResponseEntity<Object> serverErrorResponse() {
