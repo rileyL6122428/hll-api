@@ -3,16 +3,22 @@ package com.example.hllapi.controllers;
 import static java.util.Arrays.asList;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import java.io.ByteArrayOutputStream;
+import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -25,9 +31,11 @@ import com.example.hllapi.model.Track;
 import com.example.hllapi.repository.TrackRepo;
 import com.example.hllapi.service.TrackMetadataParser;
 
+import software.amazon.awssdk.awscore.exception.AwsServiceException;
 import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
@@ -227,6 +235,129 @@ class TrackControllerTest {
 	}
 	
 	@Nested
+	class DeleteTrack {
+		
+		String authHeader;
+		String trackId;
+		Track track;
+		
+		@BeforeEach
+		void setup() {
+			authHeader = "Bearer eyJ0eXAiOiJKV1QiLCJhbGciOiJSUzI1NiIsImtpZCI6Ik1VTTNSVU5HUXpWQlJVSTFNMFEzUXpZd09UWXpNa1ZFTXpNeE9ETTROMEpFUkRBMlJqQTBPUSJ9.eyJuaWNrbmFtZSI6InJpbGV5bGl0dGxlZmllbGQiLCJuYW1lIjoicmlsZXlsaXR0bGVmaWVsZEB5bWFpbC5jb20iLCJwaWN0dXJlIjoiaHR0cHM6Ly9zLmdyYXZhdGFyLmNvbS9hdmF0YXIvNTgwYTA4ODMxNDRiMWNmNWM5ZjFhNTFmY2Q0MWVhZjg_cz00ODAmcj1wZyZkPWh0dHBzJTNBJTJGJTJGY2RuLmF1dGgwLmNvbSUyRmF2YXRhcnMlMkZyaS5wbmciLCJ1cGRhdGVkX2F0IjoiMjAxOS0wOC0xNFQwMjo1OTo0OS4wNjdaIiwiaXNzIjoiaHR0cHM6Ly9kZXYta2ZhYXQ4LTguYXV0aDAuY29tLyIsInN1YiI6ImF1dGgwfDVjYmEyZTJkODFhYzkwMTAzM2JhMDQ0ZiIsImF1ZCI6IjhzMHN2WlZFZlMyeENOdzgyaXZnR3IzWUZVNE9ReDduIiwiaWF0IjoxNTY1ODMzNjY1LCJleHAiOjE1NjU4Njk2NjUsImF0X2hhc2giOiIyMWRFRVlaQUJmemlMSDZVcVNCa0VnIiwibm9uY2UiOiJqNDAyWn5pN3FBcTFrZFRhMVVKbWd4WVFxOXNodkZMSCJ9.B9L6Iu8Og7BbvEEem9yJnRzGdA2ZofFob_IVu3vqW2oLZ8NlJD_bBWvbilFaqcVFs3EutEc2xyzJAWcbNpU86KMYD8CVOm8Y0awd-mCt-DhPeN6wEd0j6GpSYc1-MyGW0ScD8fpMKU_jfEASeGHKVcj9r1aZIWSWIsvHTLgGtcV13MDav3IN2NF3yNJQSFPm_nIyAas2vV0Oe41e_VFFvsE8HR4o94L6kiyKZ5ZCl55jegvM7ifbbRuFTpnxMnxLB6YhFKbw8rxi9n4p960ugsfZkOfTBOj4pnCKrpJxy1rNWTRcYqKFQpc6ncAHULxE2LP1MEqBA9od-gVJhpwO2g";
+			trackId = "EXAMPLE_TRACK_ID";
+			track = mock(Track.class);
+			when(track.getUserId()).thenReturn("rileylittlefield@ymail.com");
+			when(trackRepo.byId(trackId)).thenReturn(track);
+		}
+		
+		@Test
+		void returnsAnUnauthorizedResponseWhenTrackUserIdDoesNotMatchIdTokenName() {
+			when(track.getUserId()).thenReturn("notrileylittlefield@ymail.com");
+			
+			ResponseEntity<Object> response = trackController.deleteTrack(trackId, authHeader);
+			
+			assertEquals(HttpStatus.UNAUTHORIZED, response.getStatusCode());
+			TrackController.ResponsePayload responsePayload = (TrackController.ResponsePayload)response.getBody();
+			assertNull(responsePayload.getTrack());
+			assertEquals("USER IS NOT AUTHORIZED TO DELETE REQUESTED TRACK", responsePayload.getMessage());
+		}
+		
+		@Test
+		void doesNotDeleteTrackWhenTrackUserIdDoesNotMatchIdTokenName() {
+			when(track.getUserId()).thenReturn("notrileylittlefield@ymail.com");			
+			trackController.deleteTrack(trackId, authHeader);
+			verify(trackRepo, times(0)).delete(any());
+			verify(s3, times(0)).deleteObject(any(DeleteObjectRequest.class));
+		}
+		
+		@Test
+		void returnsAnErrorResponseWhenRemovalFromTrackRepoFails() {
+			doThrow(new RuntimeException("EXAMPLE RUNTIME ERROR")).when(trackRepo).delete(track);
+			ResponseEntity<Object> response = trackController.deleteTrack(trackId, authHeader);
+			
+			TrackController.ResponsePayload responsePayload = (TrackController.ResponsePayload)response.getBody();
+			assertNull(responsePayload.getTrack());
+			assertEquals("UNABLE TO DELETE TRACK", responsePayload.getMessage());
+			assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
+		}
+		
+		@Test
+		void logsAnErrorWhenTrackS3DeletionFails() {
+			ByteArrayOutputStream errorContent = new ByteArrayOutputStream();
+			PrintStream originalError = System.err;
+			System.setErr(new PrintStream(errorContent));
+			
+			String s3Key = "EXAMPLE_KEY_VALUE";
+			when(track.getS3Key()).thenReturn(s3Key);
+			
+			doThrow(mock(AwsServiceException.class))
+				.when(s3).deleteObject(any(DeleteObjectRequest.class));
+			
+			trackController.deleteTrack(trackId, authHeader);
+			
+			assertEquals("ERROR DELETEING TRACK FROM S3 WITH KEY " + s3Key + "\n", errorContent.toString());
+			
+			System.setErr(originalError);
+		}
+		
+		@Test
+		void returnsSuccessRsponseWhenTrackIsDeletedFromTrackRepoButTrackS3DeletionFails() {
+			doThrow(mock(AwsServiceException.class))
+				.when(s3).deleteObject(any(DeleteObjectRequest.class));
+			
+			ResponseEntity<Object> response = trackController.deleteTrack(trackId, authHeader);
+			assertEquals(HttpStatus.OK, response.getStatusCode());
+			
+			TrackController.ResponsePayload responsePayload = (TrackController.ResponsePayload)response.getBody();
+			assertEquals(track, responsePayload.getTrack());
+			assertNull(responsePayload.getMessage());
+		}
+		
+		@Test
+		void doesNotCallS3DeleteOperationWhenTrackRepoDeletionFails() {
+			doThrow(new RuntimeException("EXAMPLE RUNTIME ERROR")).when(trackRepo).delete(track);
+			trackController.deleteTrack(trackId, authHeader);
+			verify(s3, times(0)).deleteObject(any(DeleteObjectRequest.class));
+		}
+		
+		@Nested
+		class HappyPath {
+
+			@Test
+			void deletesTrackFromTrackRepo() {
+				trackController.deleteTrack(trackId, authHeader);
+				verify(trackRepo).delete(track);
+			}
+			
+			@Test
+			void deletesTrackFromS3() {
+				ArgumentCaptor<DeleteObjectRequest> deleteObjReqCaptor  = ArgumentCaptor.forClass(DeleteObjectRequest.class);
+				when(s3.deleteObject(deleteObjReqCaptor.capture())).thenReturn(null);
+				
+				String s3Key = "EXAMPLE_KEY_VALUE";
+				when(track.getS3Key()).thenReturn(s3Key);
+				
+				trackController.deleteTrack(trackId, authHeader);
+				
+				verify(s3).deleteObject(any(DeleteObjectRequest.class));
+				DeleteObjectRequest deleteObjectRequest = deleteObjReqCaptor.getValue();
+				assertEquals(bucketName, deleteObjectRequest.bucket());
+				assertEquals(s3Key, deleteObjectRequest.key());
+			}
+			
+			@Test
+			void returnsDeletedTrack() {
+				ResponseEntity<Object> response = trackController.deleteTrack(trackId, authHeader);
+				
+				TrackController.ResponsePayload responsePayload = (TrackController.ResponsePayload)response.getBody();
+				assertEquals(track, responsePayload.getTrack());
+				assertNull(responsePayload.getMessage());
+				assertEquals(HttpStatus.OK, response.getStatusCode());
+			}
+		}
+	}
+	
+	@Nested
 	class GetTracks {
 		
 		final String artistId = "EXAMPLE_ARTIST_ID";
@@ -259,5 +390,6 @@ class TrackControllerTest {
 		}
 		
 	}
+	
 
 }

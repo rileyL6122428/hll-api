@@ -9,6 +9,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -23,12 +24,17 @@ import com.example.hllapi.model.Track;
 import com.example.hllapi.repository.TrackRepo;
 import com.example.hllapi.service.TrackMetadataParser;
 
+import software.amazon.awssdk.awscore.exception.AwsServiceException;
 import software.amazon.awssdk.core.ResponseInputStream;
+import software.amazon.awssdk.core.exception.SdkClientException;
 import software.amazon.awssdk.core.sync.RequestBody;
+import software.amazon.awssdk.http.HttpStatusCode;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
+import software.amazon.awssdk.services.s3.model.S3Exception;
 
 @Controller
 public class TrackController {
@@ -140,7 +146,65 @@ public class TrackController {
 		Iterable<Track> tracks = trackRepo.findAllById(trackIds);
 		return ResponseEntity.ok(tracks);
 	}
+	
+	@DeleteMapping(value="/api/private/track/{trackId}")
+	public ResponseEntity<Object> deleteTrack(@PathVariable String trackId, String authHeader) {
+		ResponseEntity<Object> response;
+		DecodedJWT jwt = JWT.decode(authHeader.substring(6));
+		Track track = trackRepo.byId(trackId);
+		
+		try {
+			if (jwt.getClaim("name").asString().equals(track.getUserId())) {
+				trackRepo.delete(track);
+				deleteFromS3(track);
+				response = successfulDeleteResponse(track);				
+			} else {
+				response = unauthorizedDeleteResponse();
+			}
+			
+		} catch (AwsServiceException | SdkClientException exception) {
+			System.err.println("ERROR DELETEING TRACK FROM S3 WITH KEY " + track.getS3Key());
+			response = successfulDeleteResponse(track);
+			
+		} catch (Exception exception) {
+			response = serverErrorResponse();
+		}
+		
+		return response;
+	}
 
+
+	private void deleteFromS3(Track track) throws AwsServiceException, SdkClientException, S3Exception {
+		s3.deleteObject(
+			DeleteObjectRequest.builder()
+			.key(track.getS3Key())
+			.bucket(bucketName)
+			.build()
+		);
+	}
+	
+	private ResponseEntity<Object> successfulDeleteResponse(Track track) {
+		return ResponseEntity.ok(new ResponsePayload() {{
+			setTrack(track);
+		}});
+	}
+	
+	private ResponseEntity<Object> unauthorizedDeleteResponse() {
+		return ResponseEntity
+				.status(HttpStatus.UNAUTHORIZED)
+				.body(new ResponsePayload() {{
+					setMessage("USER IS NOT AUTHORIZED TO DELETE REQUESTED TRACK");
+				}});
+	}
+	
+	private ResponseEntity<Object> serverErrorResponse() {
+		return ResponseEntity
+				.status(HttpStatusCode.INTERNAL_SERVER_ERROR)
+				.body(new ResponsePayload() {{
+					setMessage("UNABLE TO DELETE TRACK");
+				}});
+	}
+	
 	public String getBucketName() {
 		return bucketName;
 	}
@@ -176,5 +240,6 @@ public class TrackController {
 			this.track = track;
 		}
 	}
+
 }
 
