@@ -262,10 +262,12 @@ class TrackControllerTest {
 			assertEquals("USER IS NOT AUTHORIZED TO DELETE REQUESTED TRACK", responsePayload.getMessage());
 		}
 		
-		@Disabled
 		@Test
 		void doesNotDeleteTrackWhenTrackUserIdDoesNotMatchIdTokenName() {
-			
+			when(track.getUserId()).thenReturn("notrileylittlefield@ymail.com");			
+			trackController.deleteTrack(trackId, authHeader);
+			verify(trackRepo, times(0)).delete(any());
+			verify(s3, times(0)).deleteObject(any(DeleteObjectRequest.class));
 		}
 		
 		@Test
