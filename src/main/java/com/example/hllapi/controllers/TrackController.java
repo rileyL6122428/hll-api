@@ -148,7 +148,7 @@ public class TrackController {
 	}
 	
 	@DeleteMapping(value="/api/private/track/{trackId}")
-	public ResponseEntity<Object> deleteTrack(@PathVariable String trackId, String authHeader) {
+	public ResponseEntity<Object> deleteTrack(@PathVariable String trackId, @RequestHeader("Authorization") String authHeader) {
 		ResponseEntity<Object> response;
 		DecodedJWT jwt = JWT.decode(authHeader.substring(6));
 		Track track = trackRepo.byId(trackId);
