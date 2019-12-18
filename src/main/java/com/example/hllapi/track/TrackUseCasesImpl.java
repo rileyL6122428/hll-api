@@ -23,12 +23,19 @@ public class TrackUseCasesImpl implements TrackUseCases {
 		return trackRepo.getTrackStream(trackId);
 	}
 	
-	public Track createTrack(CreateTrackParams track) {
-		return trackRepo.saveTrack(track);
+	public Track createTrack(CreateTrackParams params) {
+		return trackRepo.saveTrack(params);
 	};
 	
-	public Track deleteTrack(String trackId) {
-		return trackRepo.deleteTrack(trackId);
+	public Track deleteTrack(DeleteTrackParams params) {
+		Track track = trackRepo.getTrackById(params.getTrackId());
+		
+		if (track.getUserId().equalsIgnoreCase(params.getRequesterId())) {
+			track = trackRepo.deleteTrack(track.getId());
+		} else {
+			track = null;
+		}
+		return track;
 	}
 	
 }
