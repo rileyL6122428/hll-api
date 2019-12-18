@@ -38,7 +38,6 @@ public interface TrackUseCases {
 	}
 	static public enum CreateTrackOutcomes {
 		SUCESSFUL,
-		UNAUTHORIZED,
 		FAILURE
 	}
 	static class TrackCreation {
@@ -47,10 +46,19 @@ public interface TrackUseCases {
 	}
 	
 	
-	public Track deleteTrack(DeleteTrackParams params);
-	static public interface DeleteTrackParams {
-		public String getTrackId();
-		public String getRequesterId();
+	public TrackDeletion deleteTrack(DeleteTrackParams params);
+	static public class DeleteTrackParams {
+		public String trackId;
+		public String requesterId;
+	}
+	static public enum DeleteTrackOutcomes {
+		SUCESSFUL,
+		UNAUTHORIZED,
+		FAILURE
+	}
+	static class TrackDeletion {
+		public DeleteTrackOutcomes outcome;
+		public Track track;
 	}
 
 }

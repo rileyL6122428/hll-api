@@ -5,6 +5,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -19,13 +20,13 @@ import com.example.hllapi.service.TrackMetadataParser;
 import com.example.hllapi.track.Track;
 import com.example.hllapi.track.TrackUseCases;
 
+import software.amazon.awssdk.awscore.exception.AwsServiceException;
 import software.amazon.awssdk.core.ResponseInputStream;
+import software.amazon.awssdk.core.exception.SdkClientException;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 
 import static com.example.hllapi.track.TrackUseCases.*;
-
-import java.util.List;
 
 @Controller
 public class RefactoredTrackController {
@@ -100,11 +101,40 @@ public class RefactoredTrackController {
 				.status(HttpStatus.OK)
 				.body((Object)trackCreation.track);
 			
-		} else if (trackCreation.outcome == CreateTrackOutcomes.UNAUTHORIZED) {
+		} else {
+			response = ResponseEntity
+				.status(HttpStatus.INTERNAL_SERVER_ERROR)
+				.build();
+		}
+		
+		return response;
+	}
+	
+	
+	@DeleteMapping(value="/api/v2/private/track/{trackId}")
+	public ResponseEntity<Object> deleteTrack(
+		@PathVariable String trackId,
+		@RequestHeader("Authorization") String authHeader
+	) {
+		
+		TrackDeletion deletion = trackUseCases.deleteTrack(new DeleteTrackParams() {{
+			this.trackId = trackId;
+			
+			DecodedJWT jwt = JWT.decode(authHeader.substring(6));
+			this.requesterId = jwt.getClaim("name").asString();
+		}});
+		
+		ResponseEntity<Object> response;
+		if (deletion.outcome == DeleteTrackOutcomes.SUCESSFUL) {
+			response = ResponseEntity
+				.status(HttpStatus.OK)
+				.body(deletion.track);
+			
+		} else if (deletion.outcome == DeleteTrackOutcomes.UNAUTHORIZED) {
 			response = ResponseEntity
 				.status(HttpStatus.UNAUTHORIZED)
 				.build();
-
+			
 		} else {
 			response = ResponseEntity
 				.status(HttpStatus.INTERNAL_SERVER_ERROR)
