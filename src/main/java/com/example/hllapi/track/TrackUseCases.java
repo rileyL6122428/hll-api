@@ -1,7 +1,8 @@
 package com.example.hllapi.track;
-
 import java.io.InputStream;
 import java.util.List;
+
+import org.springframework.core.io.InputStreamSource;
 
 public interface TrackUseCases {
 	
@@ -17,7 +18,15 @@ public interface TrackUseCases {
 	
 	public Track getTrackById(String trackId);
 	
-	public InputStream streamTrack(String trackId);
+	public TrackStreamInit streamTrack(String trackId);
+	static public enum StreamTrackOutcomes {
+		SUCESSFUL,
+		FAILURE
+	}
+	static class TrackStreamInit {
+		public StreamTrackOutcomes outcome;
+		public InputStream stream;
+	}
 	
 	public TrackCreation createTrack(CreateTrackParams params);	
 	static public class CreateTrackParams {
