@@ -1,6 +1,8 @@
 package com.example.hllapi.controllers;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -42,6 +44,10 @@ public class TrackController {
 	private S3Client s3;
 	private TrackRepo trackRepo;
 	private TrackMetadataParser trackFileParser;
+	private Set<String> ALLOWED_FILE_TYPES = new HashSet<String>(){{
+		add("audio/mpeg");
+		add("audio/mp3");
+	}}; 
 	
 	@Value("${aws.s3.bucketName}")
 	private String bucketName;
@@ -67,7 +73,8 @@ public class TrackController {
 		ResponseEntity<TrackController.ResponsePayload> response;
 		
 		try {
-			if (audioFile.getContentType().equalsIgnoreCase("audio/mp3")) {
+//			if (audioFile.getContentType().equalsIgnoreCase("audio/mp3")) {
+			if (ALLOWED_FILE_TYPES.contains(audioFile.getContentType().toLowerCase())) {
 				String s3Key = "audio/" + audioFile.getOriginalFilename() + ".mp3";
 				s3.putObject(
 						PutObjectRequest.builder()
