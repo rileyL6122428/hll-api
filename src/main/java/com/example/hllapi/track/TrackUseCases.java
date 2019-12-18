@@ -5,7 +5,15 @@ import java.util.List;
 
 public interface TrackUseCases {
 	
-	public List<Track> getTracksByArtist(String artistId);
+	public TracksRetrieval getTracksByArtist(String artistId);
+	static public enum FetchTracksOutcomes {
+		SUCESSFUL,
+		FAILURE
+	}
+	static class TracksRetrieval {
+		public FetchTracksOutcomes outcome;
+		public List<Track> tracks;
+	}
 	
 	public Track getTrackById(String trackId);
 	
