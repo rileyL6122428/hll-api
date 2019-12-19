@@ -11,31 +11,71 @@ public class TrackUseCasesImpl implements TrackUseCases {
 		this.trackRepo = trackRepo;
 	}
 	
-	public List<Track> getTracksByArtist(String artistId) {
-		return trackRepo.getTracksByArtist(artistId);
+	public TrackUseCases.TracksRetrieval getTracksByArtist(String artistId) {
+		TrackUseCases.TracksRetrieval retrieval = new TrackUseCases.TracksRetrieval();
+		List<Track> tracks = trackRepo.getTracksByArtist(artistId); 
+		
+		if (tracks != null) {
+			retrieval.outcome = TrackUseCases.FetchTracksOutcomes.SUCESSFUL;
+			retrieval.tracks = tracks;
+		} else {
+			retrieval.outcome = TrackUseCases.FetchTracksOutcomes.FAILURE;
+		}
+		
+		return retrieval;
 	}
 	
-	public Track getTrackById(String trackId) {
-		return trackRepo.getTrackById(trackId);
+	public TrackUseCases.TrackStreamInit streamTrack(String trackId) {
+		TrackUseCases.TrackStreamInit streamInit = new TrackUseCases.TrackStreamInit();
+		InputStream trackStream = trackRepo.getTrackStream(trackId);
+		
+		if (trackStream != null) {
+			streamInit.outcome = TrackUseCases.StreamTrackOutcomes.SUCESSFUL;
+			streamInit.stream = trackStream;
+		} else {
+			streamInit.outcome = TrackUseCases.StreamTrackOutcomes.FAILURE;
+		}
+		
+		return streamInit;
 	}
 	
-	public InputStream streamTrack(String trackId) {
-		return trackRepo.getTrackStream(trackId);
-	}
-	
-	public Track createTrack(CreateTrackParams params) {
-		return trackRepo.saveTrack(params);
+	public TrackUseCases.TrackCreation createTrack(CreateTrackParams params) {
+		TrackUseCases.TrackCreation trackCreation = new TrackUseCases.TrackCreation();
+		Track createdTrack = trackRepo.saveTrack(params);
+		
+		if (createdTrack != null) {
+			trackCreation.outcome = TrackUseCases.CreateTrackOutcomes.SUCESSFUL;
+			trackCreation.track = createdTrack;
+		} else {
+			trackCreation.outcome = TrackUseCases.CreateTrackOutcomes.FAILURE;
+		}
+		
+		return trackCreation;
 	};
 	
-	public Track deleteTrack(DeleteTrackParams params) {
-		Track track = trackRepo.getTrackById(params.getTrackId());
+	public TrackUseCases.TrackDeletion deleteTrack(DeleteTrackParams params) {
+		TrackUseCases.TrackDeletion trackDeletion = new TrackUseCases.TrackDeletion();
 		
-		if (track.getUserId().equalsIgnoreCase(params.getRequesterId())) {
-			track = trackRepo.deleteTrack(track.getId());
-		} else {
-			track = null;
+		Track track = trackRepo.getTrackById(params.trackId);
+		
+		boolean operationAuthorized = track.getUserId().equalsIgnoreCase(params.requesterId);
+		if (operationAuthorized) {
+			track = trackRepo.deleteTrack(track.getId());			
 		}
-		return track;
+		
+		if (operationAuthorized && track != null) {
+			trackDeletion.outcome = TrackUseCases.DeleteTrackOutcomes.SUCESSFUL;
+			trackDeletion.track = track;
+			
+		} else if (!operationAuthorized) {
+			trackDeletion.outcome = TrackUseCases.DeleteTrackOutcomes.UNAUTHORIZED;
+			
+		} else {
+			trackDeletion.outcome = TrackUseCases.DeleteTrackOutcomes.FAILURE;
+		}
+		
+		
+		return trackDeletion;
 	}
 	
 }

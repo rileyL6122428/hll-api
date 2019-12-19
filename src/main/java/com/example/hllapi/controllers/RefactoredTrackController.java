@@ -17,16 +17,17 @@ import org.springframework.web.multipart.MultipartFile;
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.example.hllapi.service.TrackMetadataParser;
-import com.example.hllapi.track.Track;
 import com.example.hllapi.track.TrackUseCases;
-
-import software.amazon.awssdk.awscore.exception.AwsServiceException;
-import software.amazon.awssdk.core.ResponseInputStream;
-import software.amazon.awssdk.core.exception.SdkClientException;
-import software.amazon.awssdk.services.s3.model.GetObjectRequest;
-import software.amazon.awssdk.services.s3.model.GetObjectResponse;
-
-import static com.example.hllapi.track.TrackUseCases.*;
+import com.example.hllapi.track.TrackUseCases.CreateTrackOutcomes;
+import com.example.hllapi.track.TrackUseCases.CreateTrackParams;
+import com.example.hllapi.track.TrackUseCases.DeleteTrackOutcomes;
+import com.example.hllapi.track.TrackUseCases.DeleteTrackParams;
+import com.example.hllapi.track.TrackUseCases.FetchTracksOutcomes;
+import com.example.hllapi.track.TrackUseCases.StreamTrackOutcomes;
+import com.example.hllapi.track.TrackUseCases.TrackCreation;
+import com.example.hllapi.track.TrackUseCases.TrackDeletion;
+import com.example.hllapi.track.TrackUseCases.TrackStreamInit;
+import com.example.hllapi.track.TrackUseCases.TracksRetrieval;
 
 @Controller
 public class RefactoredTrackController {
@@ -36,14 +37,17 @@ public class RefactoredTrackController {
 	
 	public RefactoredTrackController(
 		TrackUseCases trackUseCases,
-		TrackMetadataParser trackParser
+		TrackMetadataParser trackParser // THIS GUY NEEDS REFACTORED
 	) {
 		this.trackUseCases = trackUseCases;
 		this.trackParser = trackParser;
 	}
 	
 	@GetMapping(value="/api/v2/public/tracks")
-	public ResponseEntity<Object> getTracks(@RequestParam(name="artist-id") String artistId) throws Exception {
+	public ResponseEntity<Object> getTracks(
+		@RequestParam(name="artist-id") String artistId
+		
+	) throws Exception {
 		
 		TracksRetrieval retrieval = trackUseCases.getTracksByArtist(artistId); 
 		
@@ -113,12 +117,12 @@ public class RefactoredTrackController {
 	
 	@DeleteMapping(value="/api/v2/private/track/{trackId}")
 	public ResponseEntity<Object> deleteTrack(
-		@PathVariable String trackId,
+		@PathVariable String selectedTrackId,
 		@RequestHeader("Authorization") String authHeader
 	) {
 		
 		TrackDeletion deletion = trackUseCases.deleteTrack(new DeleteTrackParams() {{
-			this.trackId = trackId;
+			this.trackId = selectedTrackId;
 			
 			DecodedJWT jwt = JWT.decode(authHeader.substring(6));
 			this.requesterId = jwt.getClaim("name").asString();

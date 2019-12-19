@@ -16,8 +16,6 @@ public interface TrackUseCases {
 		public List<Track> tracks;
 	}
 	
-	public Track getTrackById(String trackId);
-	
 	public TrackStreamInit streamTrack(String trackId);
 	static public enum StreamTrackOutcomes {
 		SUCESSFUL,
