@@ -1,27 +1,30 @@
 package com.example.hllapi.controllers;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import java.io.InputStream;
+import java.util.ArrayList;
 
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
-import org.mockito.Mockito;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.multipart.MultipartFile;
 
-import static org.mockito.Mockito.*;
-
-import java.io.IOException;
-import java.io.InputStream;
-import java.util.ArrayList;
-
 import com.example.hllapi.track.Track;
 import com.example.hllapi.track.TrackMetadataParser;
 import com.example.hllapi.track.TrackUseCases;
+import com.example.hllapi.track.TrackUseCases.CreateTrackOutcomes;
+import com.example.hllapi.track.TrackUseCases.DeleteTrackOutcomes;
+import com.example.hllapi.track.TrackUseCases.DeleteTrackParams;
+import com.example.hllapi.track.TrackUseCases.TrackDeletion;
 
 class TrackControllerTest {
 	
@@ -114,7 +117,6 @@ class TrackControllerTest {
 		}
 	}
 
-
 	@Nested
 	public class PostTrackMethod {
 		
@@ -127,7 +129,6 @@ class TrackControllerTest {
 		
 		@BeforeEach
 		void beforeEach() throws Exception {
-			// name: "John Doe"
 			authHeader = "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c";
 			
 			audioFile = mock(MultipartFile.class);
@@ -153,6 +154,77 @@ class TrackControllerTest {
 			assertEquals(audioFile.getBytes(), createParams.trackBytes);
 			assertEquals(audioFile.getContentType(), createParams.fileType);
 			assertEquals(trackDuration, createParams.duration);
+		}
+		
+		@Test
+		void returnsSuccessResponseWhenTrackCreationIsSuccessful() throws Exception {
+			trackCreation.outcome = CreateTrackOutcomes.SUCESSFUL;
+			trackCreation.track = mock(Track.class);
+			
+			ResponseEntity<Object> response = controller.postTrack(audioFile, authHeader);
+			
+			assertEquals(HttpStatus.OK, response.getStatusCode());
+			assertEquals(trackCreation.track, response.getBody());
+		}
+		
+		@Test
+		void returnsFailureResponseWhenTrackCreationFails() throws Exception {
+			trackCreation.outcome = CreateTrackOutcomes.FAILURE;
+			ResponseEntity<Object> response = controller.postTrack(audioFile, authHeader);
+			assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
+		}
+	}
+
+	@Nested
+	public class DeleteTrackMethod {
+		
+		String trackId;
+		String authHeader;
+		
+		TrackDeletion deletion;
+		ArgumentCaptor<DeleteTrackParams> deleteParamsCaptor;
+		
+		@BeforeEach
+		void setup() {
+			trackId = "EXAMPLE_TRACK_ID";
+			authHeader = "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c";
+			
+			deletion = new TrackUseCases.TrackDeletion();
+			deleteParamsCaptor = ArgumentCaptor.forClass(DeleteTrackParams.class);
+			when(useCases.deleteTrack(deleteParamsCaptor.capture())).thenReturn(deletion);
+		}
+		
+		@Test
+		void deletesTrackSpecifiedByParams() {
+			controller.deleteTrack(trackId, authHeader);
+			DeleteTrackParams params = deleteParamsCaptor.getValue();
+			assertEquals(trackId, params.trackId);
+			assertEquals("John Doe", params.requesterId);
+		}
+		
+		@Test
+		void returnsSuccessResponseWhenTrackDeletionSucceeds() {
+			deletion.outcome = DeleteTrackOutcomes.SUCESSFUL;
+			deletion.track = mock(Track.class);
+			
+			ResponseEntity<Object> response = controller.deleteTrack(trackId, authHeader);
+			
+			assertEquals(HttpStatus.OK, response.getStatusCode());
+			assertEquals(deletion.track, response.getBody());
+		}
+		
+		@Test
+		void returnsUnauthorizedResponseWhenRequesterIsNotAuthorizedToDeleteTrack() {
+			deletion.outcome = DeleteTrackOutcomes.UNAUTHORIZED;
+			ResponseEntity<Object> response = controller.deleteTrack(trackId, authHeader);
+			assertEquals(HttpStatus.UNAUTHORIZED, response.getStatusCode());
+		}
+		
+		@Test
+		void returnsFailureResponseWhenTrackDeletionFails() {
+			deletion.outcome = DeleteTrackOutcomes.FAILURE;
+			ResponseEntity<Object> response = controller.deleteTrack(trackId, authHeader);
+			assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatusCode());
 		}
 	}
 }
