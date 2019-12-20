@@ -1,10 +1,15 @@
-package com.example.hllapi.track;
+package com.example.hllapi.track.impl;
 
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
+
+import com.example.hllapi.track.Track;
+import com.example.hllapi.track.TrackRepo;
+import com.example.hllapi.track.TrackUseCases;
+import com.example.hllapi.track.TrackUseCases.CreateTrackParams;
 
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
@@ -44,8 +49,8 @@ public class MongoS3TrackRepo implements TrackRepo {
 	public List<Track> getTracksByArtist(String artistId) {
 		ArrayList<Track> tracks = new ArrayList<Track>();
 		try {
-			Iterable<Track> tracksIterable = this.mongoTrackRepo.findAllByUserId(artistId);
-			Iterator<Track> tracksIterator = tracksIterable.iterator();
+			Iterable<MongoDBTrack> tracksIterable = this.mongoTrackRepo.findAllByUserId(artistId);
+			Iterator<MongoDBTrack> tracksIterator = tracksIterable.iterator();
 			while(tracksIterator.hasNext()) {
 				tracks.add(tracksIterator.next());
 			}			
@@ -80,8 +85,8 @@ public class MongoS3TrackRepo implements TrackRepo {
 		Track track = null;
 		
 		try {
-			if (allowedFileTypes.contains(params.getFileType().toLowerCase())) {
-				String s3Key = "audio/" + params.getTrackName() + ".mp3";
+			if (allowedFileTypes.contains(params.fileType.toLowerCase())) {
+				String s3Key = "audio/" + params.trackName + ".mp3";
 				
 				s3.putObject(
 					PutObjectRequest.builder()
@@ -89,15 +94,15 @@ public class MongoS3TrackRepo implements TrackRepo {
 						.key(s3Key)
 						.build(),
 						
-					RequestBody.fromBytes(params.getTrackBytes())
+					RequestBody.fromBytes(params.trackBytes)
 				);
 				
 				track = mongoTrackRepo.save(
-					Track.Builder()
+					new MongoDBTrack.Builder()
 						.setS3Key(s3Key)
-						.setUserId(params.getArtistName())
-						.setName(params.getTrackName())
-						.setDuration(params.getDuration())
+						.setUserId(params.artistName)
+						.setName(params.trackName)
+						.setDuration(params.duration)
 						.build()
 				);
 			}
@@ -110,7 +115,7 @@ public class MongoS3TrackRepo implements TrackRepo {
 	}
 	
 	public Track deleteTrack(String id) {
-		Track track = null;
+		MongoDBTrack track = null;
 		boolean trackDeletedFromMongo = false;
 		
 		try {

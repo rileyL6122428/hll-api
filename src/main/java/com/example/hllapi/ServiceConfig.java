@@ -8,7 +8,7 @@ import org.springframework.context.annotation.Configuration;
 
 import net.bramp.ffmpeg.FFprobe;
 
-@Configuration
+//@Configuration
 public class ServiceConfig {
 	
 	@Value("${ffprobe.bin.path}")

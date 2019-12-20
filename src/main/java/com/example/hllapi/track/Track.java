@@ -6,15 +6,15 @@ public class Track {
 		return new Track.Builder();
 	}
 
-	private String id;
+	protected String id;
 	
-	private String s3Key;
+	protected String s3Key;
 	
-	private String userId;
+	protected String userId;
 	
-	private String name;
+	protected String name;
 	
-	private double duration;
+	protected double duration;
 	
 	public Track(
 		String id,
@@ -33,41 +33,21 @@ public class Track {
 	public String getId() {
 		return id;
 	}
-	
-	public void setId(String id) {
-		this.id = id;
-	}
 
 	public String getS3Key() {
 		return s3Key;
-	}
-
-	public void setS3Key(String s3Key) {
-		this.s3Key = s3Key;
 	}
 	
 	public String getUserId() {
 		return userId;
 	}
 	
-	public void setUserId(String userId) {
-		this.userId = userId;
-	}
-	
 	public String getName() {
 		return name;
 	}
 	
-	public void setName(String name) {
-		this.name = name;
-	}
-	
 	public double getDuration() {
 		return duration;
-	}
-	
-	public void setDuration(double duration) {
-		this.duration = duration;
 	}
 	
 	public static class Builder {
@@ -107,6 +87,5 @@ public class Track {
 				duration
 			);
 		}
-		
 	}
 }

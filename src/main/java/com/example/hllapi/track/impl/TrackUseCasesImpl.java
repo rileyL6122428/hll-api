@@ -1,7 +1,21 @@
-package com.example.hllapi.track;
+package com.example.hllapi.track.impl;
 
 import java.io.InputStream;
 import java.util.List;
+
+import com.example.hllapi.track.Track;
+import com.example.hllapi.track.TrackRepo;
+import com.example.hllapi.track.TrackUseCases;
+import com.example.hllapi.track.TrackUseCases.CreateTrackOutcomes;
+import com.example.hllapi.track.TrackUseCases.CreateTrackParams;
+import com.example.hllapi.track.TrackUseCases.DeleteTrackOutcomes;
+import com.example.hllapi.track.TrackUseCases.DeleteTrackParams;
+import com.example.hllapi.track.TrackUseCases.FetchTracksOutcomes;
+import com.example.hllapi.track.TrackUseCases.StreamTrackOutcomes;
+import com.example.hllapi.track.TrackUseCases.TrackCreation;
+import com.example.hllapi.track.TrackUseCases.TrackDeletion;
+import com.example.hllapi.track.TrackUseCases.TrackStreamInit;
+import com.example.hllapi.track.TrackUseCases.TracksRetrieval;
 
 public class TrackUseCasesImpl implements TrackUseCases {
 	

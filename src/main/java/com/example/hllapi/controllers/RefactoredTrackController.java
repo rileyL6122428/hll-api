@@ -1,5 +1,6 @@
 package com.example.hllapi.controllers;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -16,7 +17,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.interfaces.DecodedJWT;
-import com.example.hllapi.service.TrackMetadataParser;
+import com.example.hllapi.track.TrackMetadataParser;
 import com.example.hllapi.track.TrackUseCases;
 import com.example.hllapi.track.TrackUseCases.CreateTrackOutcomes;
 import com.example.hllapi.track.TrackUseCases.CreateTrackParams;
@@ -35,15 +36,16 @@ public class RefactoredTrackController {
 	private TrackUseCases trackUseCases;
 	private TrackMetadataParser trackParser;
 	
+	@Autowired
 	public RefactoredTrackController(
 		TrackUseCases trackUseCases,
-		TrackMetadataParser trackParser // THIS GUY NEEDS REFACTORED
+		TrackMetadataParser trackParser
 	) {
 		this.trackUseCases = trackUseCases;
 		this.trackParser = trackParser;
 	}
 	
-	@GetMapping(value="/api/v2/public/tracks")
+	@GetMapping(value="/api/public/tracks")
 	public ResponseEntity<Object> getTracks(
 		@RequestParam(name="artist-id") String artistId
 		
@@ -64,7 +66,7 @@ public class RefactoredTrackController {
 		return response;
 	}
 	
-	@GetMapping(value="/api/v2/public/track/{trackId}/stream", produces="audio/mpeg")
+	@GetMapping(value="/api/public/track/{trackId}/stream", produces="audio/mpeg")
 	@ResponseBody
 	public InputStreamResource streamTrack(@PathVariable String trackId) {
 		TrackStreamInit trackStreamInit = trackUseCases.streamTrack(trackId);
@@ -79,7 +81,7 @@ public class RefactoredTrackController {
 		return streamResource;
 	}
 	
-	@PostMapping(value="/api/v2/private/track")
+	@PostMapping(value="/api/private/track")
 	@CrossOrigin
 	public ResponseEntity<Object> postTrack(
 		@RequestParam("audio-file") MultipartFile audioFile,
@@ -87,7 +89,7 @@ public class RefactoredTrackController {
 	) throws Exception {
 		
 		TrackCreation trackCreation = trackUseCases.createTrack(new CreateTrackParams() {{
-			this.trackName = audioFile.getName();
+			this.trackName = audioFile.getOriginalFilename();
 			this.trackBytes = audioFile.getBytes();
 			this.fileType = audioFile.getContentType();
 
@@ -115,11 +117,12 @@ public class RefactoredTrackController {
 	}
 	
 	
-	@DeleteMapping(value="/api/v2/private/track/{trackId}")
+	@DeleteMapping(value="/api/private/track/{trackId}")
 	public ResponseEntity<Object> deleteTrack(
-		@PathVariable String selectedTrackId,
+		@PathVariable String trackId,
 		@RequestHeader("Authorization") String authHeader
 	) {
+		String selectedTrackId = trackId;
 		
 		TrackDeletion deletion = trackUseCases.deleteTrack(new DeleteTrackParams() {{
 			this.trackId = selectedTrackId;

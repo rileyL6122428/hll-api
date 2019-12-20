@@ -1,29 +1,28 @@
-package com.example.hllapi.service;
+package com.example.hllapi.track.impl;
 
 import java.io.File;
 import java.nio.file.Files;
 import java.util.Random;
 
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
+import com.example.hllapi.track.TrackMetadataParser;
 
 import net.bramp.ffmpeg.FFprobe;
 import net.bramp.ffmpeg.probe.FFmpegFormat;
 import net.bramp.ffmpeg.probe.FFmpegProbeResult;
 
-//@Service
-public class TrackMetadataParser {
+public class FfmpegTrackParser implements TrackMetadataParser {
 	
-	@Value("${fileparser.tempFilePath}")
+//	@Value("${fileparser.tempFilePath}")
 	private String tempFilepath;
-	
 	private FFprobe ffprobe;
 	private Random random;
 	
-	public TrackMetadataParser(
+	public FfmpegTrackParser(
+		String tempFilepath,
 		FFprobe ffprobe,
 		Random random
 	) {
+		this.tempFilepath = tempFilepath;
 		this.ffprobe = ffprobe;
 		this.random = random;
 	}
@@ -40,12 +39,4 @@ public class TrackMetadataParser {
 		return format.duration;
 	}
 
-	public String getTempFilepath() {
-		return tempFilepath;
-	}
-
-	public void setTempFilepath(String tempFilepath) {
-		this.tempFilepath = tempFilepath;
-	}
-	
 }

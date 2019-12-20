@@ -38,7 +38,7 @@ import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.model.S3Exception;
 
-@Controller
+//@Controller
 public class TrackController {
 
 	private S3Client s3;
