@@ -6,12 +6,17 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
+import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.multipart.MultipartFile;
 
 import static org.mockito.Mockito.*;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 
 import com.example.hllapi.track.Track;
@@ -52,7 +57,6 @@ class TrackControllerTest {
 		
 		@Test
 		void looksUpTracksRelatedToProvidedArtist() throws Exception {
-			String artistId = "EXAMPLE_ARTIST_ID";
 			controller.getTracks(artistId);
 			verify(useCases).getTracksByArtist(artistId);
 		}
@@ -80,4 +84,75 @@ class TrackControllerTest {
 		}
 	}
 
+	@Nested
+	public class StreamTrackMethod {
+		
+		String trackId;
+		TrackUseCases.TrackStreamInit streamInit;
+		
+		@BeforeEach
+		void setup() {
+			trackId = "EXAMPLE_TRACK_ID";
+			
+			streamInit = new TrackUseCases.TrackStreamInit();
+			when(useCases.streamTrack(trackId)).thenReturn(streamInit);
+		}
+		
+		@Test
+		void returnsStreamResourceWhenStreamInitIsSuccessful() throws Exception {
+			streamInit.outcome = TrackUseCases.StreamTrackOutcomes.SUCESSFUL;
+			streamInit.stream = mock(InputStream.class);
+			InputStreamResource streamResource = controller.streamTrack(trackId);
+			assertEquals(streamInit.stream, streamResource.getInputStream());
+		}
+		
+		@Test
+		void returnsNullWhenStreamInitFails() throws Exception {
+			streamInit.outcome = TrackUseCases.StreamTrackOutcomes.FAILURE;
+			InputStreamResource streamResource = controller.streamTrack(trackId);
+			assertNull(streamResource);
+		}
+	}
+
+
+	@Nested
+	public class PostTrackMethod {
+		
+		MultipartFile audioFile;
+		double trackDuration;
+		String authHeader;
+		
+		TrackUseCases.TrackCreation trackCreation;
+		ArgumentCaptor<TrackUseCases.CreateTrackParams> postTrackCaptor;
+		
+		@BeforeEach
+		void beforeEach() throws Exception {
+			// name: "John Doe"
+			authHeader = "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c";
+			
+			audioFile = mock(MultipartFile.class);
+			when(audioFile.getBytes()).thenReturn(new byte[] {});
+			when(audioFile.getOriginalFilename()).thenReturn("EXAMPLE_FILE_NAME");
+			when(audioFile.getContentType()).thenReturn("EXAMPLE_GET_CONTENT_TYPE");
+			
+			trackDuration = 123d;
+			when(trackParser.getDuration(audioFile.getBytes())).thenReturn(trackDuration);
+			
+			trackCreation = new TrackUseCases.TrackCreation();
+			postTrackCaptor = ArgumentCaptor.forClass(TrackUseCases.CreateTrackParams.class);
+			when(useCases.createTrack(postTrackCaptor.capture())).thenReturn(trackCreation);
+		}
+		
+		@Test
+		void createsTrackWithProvidedParams() throws Exception {
+			controller.postTrack(audioFile, authHeader);
+			
+			TrackUseCases.CreateTrackParams createParams = postTrackCaptor.getValue();
+			assertEquals("John Doe", createParams.artistName);
+			assertEquals(audioFile.getOriginalFilename(), createParams.trackName);
+			assertEquals(audioFile.getBytes(), createParams.trackBytes);
+			assertEquals(audioFile.getContentType(), createParams.fileType);
+			assertEquals(trackDuration, createParams.duration);
+		}
+	}
 }
