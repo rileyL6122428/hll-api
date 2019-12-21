@@ -6,10 +6,11 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
+import org.assertj.core.util.Arrays;
+
 import com.example.hllapi.track.Track;
 import com.example.hllapi.track.TrackRepo;
 import com.example.hllapi.track.TrackUseCases;
-import com.example.hllapi.track.TrackUseCases.CreateTrackParams;
 
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
@@ -85,7 +86,7 @@ public class MongoS3TrackRepo implements TrackRepo {
 		Track track = null;
 		
 		try {
-			if (allowedFileTypes.contains(params.fileType.toLowerCase())) {
+			if (allowedFileTypes.contains(params.fileType.toLowerCase())) { // THIS DETAIL SHOULD LIVE HERE?
 				String s3Key = "audio/" + params.trackName + ".mp3";
 				
 				s3.putObject(
