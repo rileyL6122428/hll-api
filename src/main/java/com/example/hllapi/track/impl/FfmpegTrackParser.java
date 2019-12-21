@@ -12,7 +12,6 @@ import net.bramp.ffmpeg.probe.FFmpegProbeResult;
 
 public class FfmpegTrackParser implements TrackMetadataParser {
 	
-//	@Value("${fileparser.tempFilePath}")
 	private String tempFilepath;
 	private FFprobe ffprobe;
 	private Random random;
