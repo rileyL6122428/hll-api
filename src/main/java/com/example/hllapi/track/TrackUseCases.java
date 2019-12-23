@@ -36,6 +36,7 @@ public interface TrackUseCases {
 	}
 	static public enum CreateTrackOutcomes {
 		SUCESSFUL,
+		FAILURE_FROM_IMPROPER_FILE_FORMAT,
 		FAILURE
 	}
 	static class TrackCreation {

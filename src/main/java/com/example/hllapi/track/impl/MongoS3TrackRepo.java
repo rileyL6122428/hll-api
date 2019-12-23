@@ -22,18 +22,15 @@ public class MongoS3TrackRepo implements TrackRepo {
 	
 	private S3Client s3;
 	private String bucketName;
-	private Set<String> allowedFileTypes;
 	private MongoDBTrackRepo mongoTrackRepo;
 	
 	public MongoS3TrackRepo(
 		S3Client s3,
 		String bucketName,
-		Set<String> allowedFileTypes,
 		MongoDBTrackRepo mongoTrackRepo
 	) {
 		this.s3 = s3;
 		this.bucketName = bucketName;
-		this.allowedFileTypes = allowedFileTypes;
 		this.mongoTrackRepo = mongoTrackRepo;
 	}
 	
@@ -86,28 +83,26 @@ public class MongoS3TrackRepo implements TrackRepo {
 		Track track = null;
 		
 		try {
-			if (allowedFileTypes.contains(params.fileType.toLowerCase())) { // THIS DETAIL SHOULD LIVE HERE?
-				String s3Key = "audio/" + params.trackName + ".mp3";
-				
-				s3.putObject(
-					PutObjectRequest.builder()
-						.bucket(bucketName)
-						.key(s3Key)
-						.build(),
-						
-					RequestBody.fromBytes(params.trackBytes)
-				);
-				
-				track = mongoTrackRepo.save(
-					new MongoDBTrack.Builder()
-						.setS3Key(s3Key)
-						.setUserId(params.artistName)
-						.setName(params.trackName)
-						.setDuration(params.duration)
-						.build()
-				);
-			}
+			String s3Key = "audio/" + params.trackName + ".mp3";
 			
+			s3.putObject(
+				PutObjectRequest.builder()
+					.bucket(bucketName)
+					.key(s3Key)
+					.build(),
+					
+				RequestBody.fromBytes(params.trackBytes)
+			);
+			
+			track = mongoTrackRepo.save(
+				new MongoDBTrack.Builder()
+					.setS3Key(s3Key)
+					.setUserId(params.artistName)
+					.setName(params.trackName)
+					.setDuration(params.duration)
+					.build()
+			);
+				
 		} catch (Exception exception) {
 			exception.printStackTrace();
 		}

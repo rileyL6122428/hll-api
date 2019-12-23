@@ -19,11 +19,14 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 
 import com.example.hllapi.track.Track;
+import com.example.hllapi.track.TrackUseCases;
 
 import software.amazon.awssdk.core.ResponseInputStream;
+import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectResponse;
+import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;;
 
 class MongoS3TrackRepoTest {
@@ -39,16 +42,11 @@ class MongoS3TrackRepoTest {
 	void setup() {
 		s3 = mock(S3Client.class);
 		bucketName = "EXAMPLE_BUCKET_NAME";
-		allowedFileTypes = new HashSet<String>() {{
-			add("EXAMPLE_ALLOWED_TYPE_1");
-			add("EXAMPLE_ALLOWED_TYPE_2");
-		}};
 		mongoTrackRepo = mock(MongoDBTrackRepo.class);
 		
 		trackRepo = new MongoS3TrackRepo(
 			s3,
 			bucketName,
-			allowedFileTypes,
 			mongoTrackRepo
 		);
 	}
@@ -164,7 +162,6 @@ class MongoS3TrackRepoTest {
 		}
 	}
 
-
 	@Nested
 	public class DeleteTrackMethod {
 		
@@ -209,6 +206,115 @@ class MongoS3TrackRepoTest {
 			DeleteObjectRequest deleteObjReq = s3Captor.getValue();
 			assertEquals(bucketName, deleteObjReq.bucket());
 			assertEquals(trackS3Key, deleteObjReq.key());
+		}
+	}
+
+	@Nested
+	public class SaveTrackMethod {
+		
+		String exampleArtistName;
+		byte[] exampleTrackBytes;
+		String exampleTrackName;
+		double exampleTrackDuration;
+		
+		@BeforeEach
+		void setup() {
+			exampleArtistName = "EXAMPLE_ARTIST_NAME";
+			exampleTrackBytes = new byte[]{};
+			exampleTrackName = "EXAMPLE_TRACK_NAME";
+			exampleTrackDuration = 123d;
+		}
+		
+//		@Disabled
+		@Test
+		void returnsNullTrackIfS3ClientThrows() {
+			when(s3.putObject(any(PutObjectRequest.class), any(RequestBody.class)))
+				.thenThrow(new RuntimeException());
+			
+			Track track = trackRepo.saveTrack(new TrackUseCases.CreateTrackParams(){{
+				this.artistName = exampleArtistName;
+				this.trackBytes = exampleTrackBytes;
+				this.trackName = exampleTrackName;
+				this.duration = exampleTrackDuration;
+			}});
+			
+			assertNull(track);
+		}
+		
+		@Test
+		void uploadsToS3WithCorrectParams() {
+			ArgumentCaptor<PutObjectRequest> putObjReqCaptor = ArgumentCaptor.forClass(PutObjectRequest.class);
+			ArgumentCaptor<RequestBody> reqBodyCaptor = ArgumentCaptor.forClass(RequestBody.class);
+			when(s3.putObject(putObjReqCaptor.capture(), reqBodyCaptor.capture()))
+				.thenReturn(null);
+			
+			trackRepo.saveTrack(new TrackUseCases.CreateTrackParams(){{
+				this.artistName = exampleArtistName;
+				this.trackBytes = exampleTrackBytes;
+				this.trackName = exampleTrackName;
+				this.duration = exampleTrackDuration;
+			}});
+			
+			PutObjectRequest putObjReq = putObjReqCaptor.getValue();
+			RequestBody reqBody = reqBodyCaptor.getValue();
+			
+			assertEquals(bucketName, putObjReq.bucket());
+			assertEquals("audio/" + exampleTrackName + ".mp3", putObjReq.key());
+			assertEquals(0, reqBody.contentLength());
+		}
+		
+		@Test
+		void returnsNullTrackIfMongoTrackRepoThrows() {
+			when(s3.putObject(any(PutObjectRequest.class), any(RequestBody.class))).thenReturn(null);
+			
+			when(mongoTrackRepo.save(any(MongoDBTrack.class))).thenThrow(new RuntimeException());
+			
+			Track track = trackRepo.saveTrack(new TrackUseCases.CreateTrackParams(){{
+				this.artistName = exampleArtistName;
+				this.trackBytes = exampleTrackBytes;
+				this.trackName = exampleTrackName;
+				this.duration = exampleTrackDuration;
+			}});
+			
+			assertNull(track);
+		}
+		
+		@Test
+		void savedTrackIntoMongoDBWithCorrectParams() {
+			when(s3.putObject(any(PutObjectRequest.class), any(RequestBody.class))).thenReturn(null);
+			
+			ArgumentCaptor<MongoDBTrack> argCaptor = ArgumentCaptor.forClass(MongoDBTrack.class);
+			when(mongoTrackRepo.save(argCaptor.capture())).thenReturn(null);
+			
+			trackRepo.saveTrack(new TrackUseCases.CreateTrackParams(){{
+				this.artistName = exampleArtistName;
+				this.trackBytes = exampleTrackBytes;
+				this.trackName = exampleTrackName;
+				this.duration = exampleTrackDuration;
+			}});
+			
+			MongoDBTrack mongoTrack = argCaptor.getValue();
+			assertEquals(exampleArtistName, mongoTrack.getUserId());
+			assertEquals(exampleTrackName, mongoTrack.getName());
+			assertEquals("audio/" + exampleTrackName + ".mp3", mongoTrack.getS3Key());
+			assertEquals(exampleTrackDuration, mongoTrack.getDuration());
+		}
+		
+		@Test
+		void returnsTrackFromMongoTrackDB() {
+			when(s3.putObject(any(PutObjectRequest.class), any(RequestBody.class))).thenReturn(null);
+			
+			MongoDBTrack mongoTrack = mock(MongoDBTrack.class);
+			when(mongoTrackRepo.save(any(MongoDBTrack.class))).thenReturn(mongoTrack);
+			
+			Track track = trackRepo.saveTrack(new TrackUseCases.CreateTrackParams(){{
+				this.artistName = exampleArtistName;
+				this.trackBytes = exampleTrackBytes;
+				this.trackName = exampleTrackName;
+				this.duration = exampleTrackDuration;
+			}});
+			
+			assertEquals(mongoTrack, track);
 		}
 	}
 }
