@@ -22,9 +22,9 @@ public class TrackUseCasesImpl implements TrackUseCases {
 	}
 	
 	public TrackUseCases.TracksRetrieval getTracksByArtist(String artistId) {
-		TrackUseCases.TracksRetrieval retrieval = new TrackUseCases.TracksRetrieval();
 		List<Track> tracks = trackRepo.getTracksByArtist(artistId); 
 		
+		TrackUseCases.TracksRetrieval retrieval = new TrackUseCases.TracksRetrieval();
 		if (tracks != null) {
 			retrieval.outcome = TrackUseCases.FetchTracksOutcomes.SUCESSFUL;
 			retrieval.tracks = tracks;
@@ -36,9 +36,9 @@ public class TrackUseCasesImpl implements TrackUseCases {
 	}
 	
 	public TrackUseCases.TrackStreamInit streamTrack(String trackId) {
-		TrackUseCases.TrackStreamInit streamInit = new TrackUseCases.TrackStreamInit();
 		InputStream trackStream = trackRepo.getTrackStream(trackId);
 		
+		TrackUseCases.TrackStreamInit streamInit = new TrackUseCases.TrackStreamInit();
 		if (trackStream != null) {
 			streamInit.outcome = TrackUseCases.StreamTrackOutcomes.SUCESSFUL;
 			streamInit.stream = trackStream;
@@ -50,7 +50,6 @@ public class TrackUseCasesImpl implements TrackUseCases {
 	}
 	
 	public TrackUseCases.TrackCreation createTrack(CreateTrackParams params) {
-		TrackUseCases.TrackCreation trackCreation = new TrackUseCases.TrackCreation();
 		boolean fileFormatIsAcceptable = allowedFileTypes.contains(params.fileType.toLowerCase());
 		Track createdTrack = null;
 
@@ -58,6 +57,7 @@ public class TrackUseCasesImpl implements TrackUseCases {
 			createdTrack = trackRepo.saveTrack(params);			
 		}
 		
+		TrackUseCases.TrackCreation trackCreation = new TrackUseCases.TrackCreation();
 		if (createdTrack != null) {
 			trackCreation.outcome = TrackUseCases.CreateTrackOutcomes.SUCESSFUL;
 			trackCreation.track = createdTrack;
@@ -80,7 +80,6 @@ public class TrackUseCasesImpl implements TrackUseCases {
 		}
 		
 		TrackUseCases.TrackDeletion trackDeletion = new TrackUseCases.TrackDeletion();
-		
 		if (operationAuthorized && deletedTrack != null) {
 			trackDeletion.outcome = TrackUseCases.DeleteTrackOutcomes.SUCESSFUL;
 			trackDeletion.track = targetTrack;
