@@ -4,7 +4,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 import com.example.hllapi.track.Track;
-import com.example.hllapi.track.Track.Builder;
 
 @Document(collection="track")
 public class MongoDBTrack extends Track {

@@ -4,8 +4,6 @@ import java.util.Optional;
 
 import org.springframework.data.mongodb.repository.MongoRepository;
 
-import com.example.hllapi.track.Track;
-
 public interface MongoDBTrackRepo extends MongoRepository<MongoDBTrack, String> { 
 	
 	default public MongoDBTrack byId(String trackId) {

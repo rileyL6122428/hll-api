@@ -2,8 +2,6 @@ package com.example.hllapi.track;
 import java.io.InputStream;
 import java.util.List;
 
-import org.springframework.core.io.InputStreamSource;
-
 public interface TrackUseCases {
 	
 	public TracksRetrieval getTracksByArtist(String artistId);

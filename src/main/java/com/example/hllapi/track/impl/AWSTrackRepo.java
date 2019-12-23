@@ -7,7 +7,6 @@ import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.example.hllapi.track.Track;
 import com.example.hllapi.track.TrackRepo;
 import com.example.hllapi.track.TrackUseCases;
-import com.example.hllapi.track.TrackUseCases.CreateTrackParams;
 
 import software.amazon.awssdk.services.s3.S3Client;
 
