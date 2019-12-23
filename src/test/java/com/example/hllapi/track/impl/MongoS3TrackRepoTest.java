@@ -277,7 +277,7 @@ class MongoS3TrackRepoTest {
 		}
 		
 		@Test
-		void savedTrackIntoMongoDBWithCorrectParams() {
+		void savesTrackIntoMongoDBWithCorrectParams() {
 			when(s3.putObject(any(PutObjectRequest.class), any(RequestBody.class))).thenReturn(null);
 			
 			ArgumentCaptor<MongoDBTrack> argCaptor = ArgumentCaptor.forClass(MongoDBTrack.class);

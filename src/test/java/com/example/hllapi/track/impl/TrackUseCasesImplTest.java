@@ -132,7 +132,9 @@ class TrackUseCasesImplTest {
 			createParams.fileType = "EXAMPLE_ALLOWED_FILE_TYPE_1";
 			Track savedTrack = mock(Track.class);
 			when(trackRepo.saveTrack(createParams)).thenReturn(savedTrack);
+			
 			TrackUseCases.TrackCreation trackCreation = trackUseCases.createTrack(createParams);
+			
 			assertEquals(TrackUseCases.CreateTrackOutcomes.SUCESSFUL, trackCreation.outcome);
 			assertEquals(savedTrack, trackCreation.track);
 		}
@@ -157,7 +159,7 @@ class TrackUseCasesImplTest {
 		}
 		
 		@Test
-		void returnsFailureResponseWhenNullTrackIsReturnedFromTrackRepo() {
+		void returnsFailureResponseWhenNullTrackIsReturnedFromTrackRepoDeleteMethod() {
 			Track track = mock(Track.class);
 			when(track.getUserId()).thenReturn("TRACK_OWNER");
 			when(track.getId()).thenReturn("TRACK_ID");
