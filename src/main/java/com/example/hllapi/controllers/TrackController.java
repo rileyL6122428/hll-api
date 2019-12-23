@@ -105,7 +105,7 @@ public class TrackController {
 		if (trackCreation.outcome == CreateTrackOutcomes.SUCESSFUL) {
 			response = ResponseEntity
 				.status(HttpStatus.OK)
-				.body((Object)trackCreation.track);
+				.body(trackCreation.track);
 			
 		} else {
 			response = ResponseEntity
