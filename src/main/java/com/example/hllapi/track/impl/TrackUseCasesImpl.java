@@ -7,16 +7,6 @@ import java.util.Set;
 import com.example.hllapi.track.Track;
 import com.example.hllapi.track.TrackRepo;
 import com.example.hllapi.track.TrackUseCases;
-import com.example.hllapi.track.TrackUseCases.CreateTrackOutcomes;
-import com.example.hllapi.track.TrackUseCases.CreateTrackParams;
-import com.example.hllapi.track.TrackUseCases.DeleteTrackOutcomes;
-import com.example.hllapi.track.TrackUseCases.DeleteTrackParams;
-import com.example.hllapi.track.TrackUseCases.FetchTracksOutcomes;
-import com.example.hllapi.track.TrackUseCases.StreamTrackOutcomes;
-import com.example.hllapi.track.TrackUseCases.TrackCreation;
-import com.example.hllapi.track.TrackUseCases.TrackDeletion;
-import com.example.hllapi.track.TrackUseCases.TrackStreamInit;
-import com.example.hllapi.track.TrackUseCases.TracksRetrieval;
 
 public class TrackUseCasesImpl implements TrackUseCases {
 	
@@ -81,18 +71,19 @@ public class TrackUseCasesImpl implements TrackUseCases {
 	};
 	
 	public TrackUseCases.TrackDeletion deleteTrack(DeleteTrackParams params) {
-		TrackUseCases.TrackDeletion trackDeletion = new TrackUseCases.TrackDeletion();
-		
-		Track track = trackRepo.getTrackById(params.trackId);
-		
-		boolean operationAuthorized = track.getUserId().equalsIgnoreCase(params.requesterId);
+		Track deletedTrack = null;
+		Track targetTrack = trackRepo.getTrackById(params.trackId);
+		boolean operationAuthorized = targetTrack != null && targetTrack.getUserId().equalsIgnoreCase(params.requesterId);
+				
 		if (operationAuthorized) {
-			track = trackRepo.deleteTrack(track.getId());			
+			deletedTrack = trackRepo.deleteTrack(targetTrack.getId());			
 		}
 		
-		if (operationAuthorized && track != null) {
+		TrackUseCases.TrackDeletion trackDeletion = new TrackUseCases.TrackDeletion();
+		
+		if (operationAuthorized && deletedTrack != null) {
 			trackDeletion.outcome = TrackUseCases.DeleteTrackOutcomes.SUCESSFUL;
-			trackDeletion.track = track;
+			trackDeletion.track = targetTrack;
 			
 		} else if (!operationAuthorized) {
 			trackDeletion.outcome = TrackUseCases.DeleteTrackOutcomes.UNAUTHORIZED;

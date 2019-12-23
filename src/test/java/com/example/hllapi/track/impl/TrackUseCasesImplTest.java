@@ -1,6 +1,10 @@
 package com.example.hllapi.track.impl;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -8,11 +12,8 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
-import static org.mockito.Mockito.*;
 
 import com.example.hllapi.track.Track;
 import com.example.hllapi.track.TrackRepo;
@@ -99,7 +100,6 @@ class TrackUseCasesImplTest {
 		}
 	}
 
-
 	@Nested
 	public class CreateTrackMethod {
 		
@@ -135,6 +135,76 @@ class TrackUseCasesImplTest {
 			TrackUseCases.TrackCreation trackCreation = trackUseCases.createTrack(createParams);
 			assertEquals(TrackUseCases.CreateTrackOutcomes.SUCESSFUL, trackCreation.outcome);
 			assertEquals(savedTrack, trackCreation.track);
+		}
+	}
+
+	@Nested
+	public class DeleteTrackMethod {
+		
+		TrackUseCases.DeleteTrackParams deleteParams;
+		
+		@BeforeEach
+		void setup() {
+			deleteParams = new TrackUseCases.DeleteTrackParams();
+		}
+		
+		@Test
+		void returnsUnauthorizedResponseWhenTargetTrackIsNotFoundByTrackRepo() {
+			when(trackRepo.getTrackById(any(String.class))).thenReturn(null);
+			TrackUseCases.TrackDeletion deletion = trackUseCases.deleteTrack(deleteParams);
+			assertEquals(TrackUseCases.DeleteTrackOutcomes.UNAUTHORIZED, deletion.outcome);
+			assertNull(deletion.track);
+		}
+		
+		@Test
+		void returnsFailureResponseWhenNullTrackIsReturnedFromTrackRepo() {
+			Track track = mock(Track.class);
+			when(track.getUserId()).thenReturn("TRACK_OWNER");
+			when(track.getId()).thenReturn("TRACK_ID");
+			when(trackRepo.getTrackById("TRACK_ID")).thenReturn(track);
+			
+			deleteParams.requesterId = "TRACK_OWNER";
+			deleteParams.trackId = "TRACK_ID";
+			
+			when(trackRepo.deleteTrack("TRACK_ID")).thenReturn(null);
+			
+			TrackUseCases.TrackDeletion deletion = trackUseCases.deleteTrack(deleteParams);
+			
+			assertEquals(TrackUseCases.DeleteTrackOutcomes.FAILURE, deletion.outcome);
+			assertNull(deletion.track);
+		}
+		
+		@Test
+		void returnsUnauthorizedResponseWhenRequesterIsNotAuthorizedToDeleteTrack() {
+			Track track = mock(Track.class);
+			when(track.getUserId()).thenReturn("TRACK_OWNER");
+			when(trackRepo.getTrackById("TRACK_ID")).thenReturn(track);
+			
+			deleteParams.requesterId = "NOT_TRACK_OWNER";
+			deleteParams.trackId = "TRACK_ID";
+			
+			TrackUseCases.TrackDeletion deletion = trackUseCases.deleteTrack(deleteParams);
+			
+			assertEquals(TrackUseCases.DeleteTrackOutcomes.UNAUTHORIZED, deletion.outcome);
+			assertNull(deletion.track);
+		}
+		
+		@Test
+		void returnsSuccessResponseWhenTrackIsSuccessfullyDeletedByTrackRepo() {
+			Track track = mock(Track.class);
+			when(track.getUserId()).thenReturn("TRACK_OWNER");
+			when(track.getId()).thenReturn("TRACK_ID");
+			when(trackRepo.getTrackById("TRACK_ID")).thenReturn(track);
+			
+			deleteParams.requesterId = "TRACK_OWNER";
+			deleteParams.trackId = "TRACK_ID";
+			
+			when(trackRepo.deleteTrack("TRACK_ID")).thenReturn(track);
+			
+			TrackUseCases.TrackDeletion deletion = trackUseCases.deleteTrack(deleteParams);
+			
+			assertEquals(TrackUseCases.DeleteTrackOutcomes.SUCESSFUL, deletion.outcome);
+			assertEquals(track, deletion.track);
 		}
 	}
 }
