@@ -84,9 +84,9 @@ public class MongoS3Config {
 			new MongoS3TrackRepo(
 				s3Client,
 				bucketName,
-				getApprovedFileTypesSet(),
 				mongoDBTrackRepo
-			)
+			),
+			getApprovedFileTypesSet()
 		);
 	}
 	
