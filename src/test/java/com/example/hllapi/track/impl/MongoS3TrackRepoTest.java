@@ -223,7 +223,6 @@ class MongoS3TrackRepoTest {
 			exampleTrackDuration = 123d;
 		}
 		
-//		@Disabled
 		@Test
 		void returnsNullTrackIfS3ClientThrows() {
 			when(s3.putObject(any(PutObjectRequest.class), any(RequestBody.class)))
