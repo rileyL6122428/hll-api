@@ -59,12 +59,6 @@ class TrackControllerTest {
 		}
 		
 		@Test
-		void looksUpTracksRelatedToProvidedArtist() throws Exception {
-			controller.getTracks(artistId);
-			verify(useCases).getTracksByArtist(artistId);
-		}
-		
-		@Test
 		void returnsSuccessResponseWhenRetrievalSuccessful() throws Exception {
 			retrieval.outcome = TrackUseCases.FetchTracksOutcomes.SUCESSFUL;
 			retrieval.tracks = new ArrayList<Track>() {{
