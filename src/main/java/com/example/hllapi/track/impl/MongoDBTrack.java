@@ -1,75 +1,43 @@
-package com.example.hllapi.model;
+package com.example.hllapi.track.impl;
 
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 
-@Document(collection="track")
-public class Track {
-	
-	static public Track.Builder Builder() {
-		return new Track.Builder();
-	}
+import com.example.hllapi.track.Track;
 
-	@Id
-	private String id;
+@Document(collection="track")
+public class MongoDBTrack extends Track {
 	
-	private String s3Key;
-	
-	private String userId;
-	
-	private String name;
-	
-	private double duration;
-	
-	public Track(
+	public MongoDBTrack(
 		@Value("#root._id") String id,
 		String s3Key,		
 		String userId,
 		String name,
 		double duration
 	) {
-		this.id = id;
-		this.s3Key = s3Key;
-		this.userId = userId;
-		this.name = name;
-		this.duration = duration;
-	}
-
-	public String getId() {
-		return id;
+		super(
+			id,
+			s3Key,
+			userId,
+			name,
+			duration
+		);
 	}
 	
 	public void setId(String id) {
 		this.id = id;
 	}
 
-	public String getS3Key() {
-		return s3Key;
-	}
-
 	public void setS3Key(String s3Key) {
 		this.s3Key = s3Key;
-	}
-	
-	public String getUserId() {
-		return userId;
 	}
 	
 	public void setUserId(String userId) {
 		this.userId = userId;
 	}
 	
-	public String getName() {
-		return name;
-	}
-	
 	public void setName(String name) {
 		this.name = name;
-	}
-	
-	public double getDuration() {
-		return duration;
 	}
 	
 	public void setDuration(double duration) {
@@ -104,8 +72,8 @@ public class Track {
 			this.duration = duration; return this;
 		}
 		
-		public Track build() {
-			return new Track(
+		public MongoDBTrack build() {
+			return new MongoDBTrack(
 				id,
 				s3Key,
 				userId,
@@ -113,6 +81,6 @@ public class Track {
 				duration
 			);
 		}
-		
 	}
+	
 }

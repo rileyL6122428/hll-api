@@ -1,7 +1,7 @@
-package com.example.hllapi.service;
+package com.example.hllapi.track.impl;
 
-import static org.junit.Assert.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -20,32 +20,33 @@ import net.bramp.ffmpeg.FFprobe;
 import net.bramp.ffmpeg.probe.FFmpegFormat;
 import net.bramp.ffmpeg.probe.FFmpegProbeResult;
 
-class TrackMetadataParserTest {
+class FfmpegTrackParserTest {
 	
-	private TrackMetadataParser trackParser;
-	private FFprobe ffprobe;
-	private Random random;
-	private String directoryOfTempFile;
+	FfmpegTrackParser trackParser;
+	
+	String tempFilepath;
+	FFprobe ffprobe;
+	Random random;
 	
 	@BeforeEach
-	public void setup() throws Exception {
+	void setup() throws Exception {
 		InputStream inputStream = ClassLoader.getSystemResourceAsStream("unittest.properties");
 		Properties properties = new Properties();
 		properties.load(inputStream);
-		directoryOfTempFile = properties.getProperty("fileparser.tempfile.location");
+		tempFilepath = properties.getProperty("fileparser.tempfile.location");
 		
 		ffprobe = mock(FFprobe.class);
 		random = mock(Random.class);
 		
-		trackParser = new TrackMetadataParser(
+		trackParser = new FfmpegTrackParser(
+			tempFilepath,
 			ffprobe,
 			random
 		);
-		trackParser.setTempFilepath(directoryOfTempFile);
 	}
-
+	
 	@Nested
-	class GetDuration {
+	public class GetDurationMethod {
 		
 		FFmpegProbeResult probeResult;
 		FFmpegFormat mpegFormat;
@@ -73,7 +74,7 @@ class TrackMetadataParserTest {
 		@Test
 		void probesConfiguredFilepathWithFFProbe() throws Exception {
 			trackParser.getDuration(fileBytes);
-			verify(ffprobe).probe(directoryOfTempFile + "/temp." + exampleRandomFloat + ".test");
+			verify(ffprobe).probe(tempFilepath + "/temp." + exampleRandomFloat + ".test");
 		}
 		
 		@Test
@@ -86,13 +87,10 @@ class TrackMetadataParserTest {
 		void deletesTempFileFromFilesystem() throws Exception {		
 			trackParser.getDuration(fileBytes);
 			
-			File folder = new File(directoryOfTempFile);
+			File folder = new File(tempFilepath);
 			for(File file : folder.listFiles()) {
-				assertNotEquals(directoryOfTempFile + "/temp." + exampleRandomFloat + ".test", file.getAbsolutePath());
+				assertNotEquals(tempFilepath + "/temp." + exampleRandomFloat + ".test", file.getAbsolutePath());
 			}
 		}
-		
 	}
-	
-
 }

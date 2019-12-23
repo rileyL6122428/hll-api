@@ -35,6 +35,13 @@
 		    <groupId>software.amazon.awssdk</groupId>
 		    <artifactId>s3</artifactId>
 	    </dependency>
+	    
+	    <dependency>
+		    <groupId>com.amazonaws</groupId>
+		    <artifactId>aws-java-sdk</artifactId>
+		     <version>1.8.11</version>
+		</dependency>
+			    
 
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
