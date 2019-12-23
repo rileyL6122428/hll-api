@@ -190,7 +190,6 @@ class MongoS3TrackRepoTest {
 			
 			Track deletedTrack = trackRepo.deleteTrack(trackId);
 			
-			verify(mongoTrackRepo).delete(track);
 			assertEquals(track, deletedTrack);
 		}
 		
