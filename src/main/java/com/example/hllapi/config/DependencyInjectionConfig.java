@@ -9,8 +9,13 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import com.amazonaws.regions.Regions;
+import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
+import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClientBuilder;
 import com.example.hllapi.track.TrackMetadataParser;
+import com.example.hllapi.track.TrackRepo;
 import com.example.hllapi.track.TrackUseCases;
+import com.example.hllapi.track.impl.AWSTrackRepo;
 import com.example.hllapi.track.impl.FfmpegTrackParser;
 import com.example.hllapi.track.impl.MongoDBTrackRepo;
 import com.example.hllapi.track.impl.MongoS3TrackRepo;
@@ -21,7 +26,7 @@ import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 
 @Configuration
-public class MongoS3Config {
+public class DependencyInjectionConfig {
 	
 	@Value("${fileparser.tempFilePath}")
 	private String tempFilepath;
@@ -75,17 +80,50 @@ public class MongoS3Config {
 	}
 	
 	@Bean
-	public TrackUseCases provideTrackUseCases(
+	public AmazonDynamoDB provideDynamoDB() {
+		return AmazonDynamoDBClientBuilder.standard()
+			.withRegion(Regions.US_EAST_2)
+			.build();
+	}
+	
+	enum TrackRepoImpl {
+		AWS_DYNAMO_DB_AND_AWS_S3,
+		MONGO_DB_AND_AWS_S3
+	}
+	private TrackRepoImpl trackRepoImpl = TrackRepoImpl.AWS_DYNAMO_DB_AND_AWS_S3;
+	
+	@Bean TrackRepo provideTrackRepo(
 		S3Client s3Client,
+		AmazonDynamoDB dynamoDB,
 		MongoDBTrackRepo mongoDBTrackRepo
 	) {
+		TrackRepo trackRepo = null;
 		
+		switch(trackRepoImpl) {
+			case AWS_DYNAMO_DB_AND_AWS_S3:
+				trackRepo = new AWSTrackRepo(
+					s3Client,
+					dynamoDB
+				); 
+				break;
+			case MONGO_DB_AND_AWS_S3:
+				trackRepo = new MongoS3TrackRepo(
+					s3Client,
+					bucketName,
+					mongoDBTrackRepo
+				);
+				break;
+		}
+		
+		return trackRepo;
+	}
+	
+	@Bean
+	public TrackUseCases provideTrackUseCases(
+		TrackRepo trackRepo
+	) {
 		return new TrackUseCasesImpl(
-			new MongoS3TrackRepo(
-				s3Client,
-				bucketName,
-				mongoDBTrackRepo
-			),
+			trackRepo,
 			getApprovedFileTypesSet()
 		);
 	}
