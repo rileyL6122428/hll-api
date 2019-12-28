@@ -20,6 +20,7 @@ import java.util.Map;
 
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.model.AttributeValue;
+import com.amazonaws.services.dynamodbv2.model.DeleteItemRequest;
 import com.amazonaws.services.dynamodbv2.model.GetItemRequest;
 import com.amazonaws.services.dynamodbv2.model.GetItemResult;
 import com.amazonaws.services.dynamodbv2.model.PutItemRequest;
@@ -32,6 +33,7 @@ import com.example.hllapi.track.impl.AWSTrackRepo.TableSchema;
 import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
@@ -334,6 +336,90 @@ class AWSTrackRepoTest {
 			assertEquals("audio/" + saveParams.trackName + ".mp3", track.getS3Key());
 			assertEquals(saveParams.artistName, track.getUserId());
 			assertEquals(saveParams.duration, track.getDuration());
+		}
+	}
+
+	@Nested
+	public class DeleteTrackMethod {
+		
+		String trackId;
+		Map<String, AttributeValue> resultMap;
+		
+		@BeforeEach
+		void setup() {
+			trackId = "EXAMPLE_TRACK_ID";
+			
+			resultMap = new HashMap<String, AttributeValue>(){{
+				put(AWSTrackRepo.TableSchema.KeyNames.ID, new AttributeValue("EXAMPLE_ID"));
+				put(AWSTrackRepo.TableSchema.KeyNames.NAME, new AttributeValue("EXAMPLE_NAME"));
+				put(AWSTrackRepo.TableSchema.KeyNames.S3_KEY, new AttributeValue("EXAMPLE_S3_KEY"));
+				put(AWSTrackRepo.TableSchema.KeyNames.USER_ID, new AttributeValue("EXAMPLE_USER_ID"));
+				put(AWSTrackRepo.TableSchema.KeyNames.DURATION, new AttributeValue(){{ setN("123"); }});
+			}};
+			
+			when(dynamoDB.getItem(any(GetItemRequest.class))).thenReturn(new GetItemResult().withItem(resultMap));
+		}
+		
+		@Test
+		void returnsNullTrackWhenDynamoDBThrows() {
+			when(dynamoDB.deleteItem(any(DeleteItemRequest.class))).thenThrow(new RuntimeException());
+			Track track = trackRepo.deleteTrack(trackId);
+			assertNull(track);
+		}
+		
+		@Test
+		void delegatesTrackDeletionToDynamoDBClient() {
+			ArgumentCaptor<DeleteItemRequest> deleteReqCaptor = ArgumentCaptor.forClass(DeleteItemRequest.class);
+			when(dynamoDB.deleteItem(deleteReqCaptor.capture())).thenReturn(null);
+			
+			trackRepo.deleteTrack(trackId);
+			
+			DeleteItemRequest deleteItemRequest = deleteReqCaptor.getValue();
+			assertEquals(trackTableName, deleteItemRequest.getTableName());
+			assertEquals(1, deleteItemRequest.getKey().size());
+			assertEquals(trackId, deleteItemRequest.getKey().get(AWSTrackRepo.TableSchema.KeyNames.ID).getS());
+		}
+		
+		@Test
+		void returnsTrackWhenDynamoDBDeleteOpSucceedsButS3DeleteOpFails() {
+			when(dynamoDB.deleteItem(any(DeleteItemRequest.class))).thenReturn(null);
+			when(s3.deleteObject(any(DeleteObjectRequest.class))).thenThrow(new RuntimeException());
+			
+			Track track = trackRepo.deleteTrack(trackId);
+			
+			assertEquals(resultMap.get(AWSTrackRepo.TableSchema.KeyNames.ID).getS(), track.getId());
+			assertEquals(resultMap.get(AWSTrackRepo.TableSchema.KeyNames.NAME).getS(), track.getName());
+			assertEquals(resultMap.get(AWSTrackRepo.TableSchema.KeyNames.S3_KEY).getS(), track.getS3Key());
+			assertEquals(resultMap.get(AWSTrackRepo.TableSchema.KeyNames.USER_ID).getS(), track.getUserId());
+			assertEquals(Double.parseDouble(resultMap.get(AWSTrackRepo.TableSchema.KeyNames.DURATION).getN()), track.getDuration());
+		}
+		
+		@Test
+		void returnsTrackWhenDynamoDBDeleteOpAndS3DeleteOpBothSucceed() {
+			when(dynamoDB.deleteItem(any(DeleteItemRequest.class))).thenReturn(null);
+			when(s3.deleteObject(any(DeleteObjectRequest.class))).thenReturn(null);
+			
+			Track track = trackRepo.deleteTrack(trackId);
+			
+			assertEquals(resultMap.get(AWSTrackRepo.TableSchema.KeyNames.ID).getS(), track.getId());
+			assertEquals(resultMap.get(AWSTrackRepo.TableSchema.KeyNames.NAME).getS(), track.getName());
+			assertEquals(resultMap.get(AWSTrackRepo.TableSchema.KeyNames.S3_KEY).getS(), track.getS3Key());
+			assertEquals(resultMap.get(AWSTrackRepo.TableSchema.KeyNames.USER_ID).getS(), track.getUserId());
+			assertEquals(Double.parseDouble(resultMap.get(AWSTrackRepo.TableSchema.KeyNames.DURATION).getN()), track.getDuration());
+		}
+		
+		@Test
+		void deletesTrackFromS3() {
+			when(dynamoDB.deleteItem(any(DeleteItemRequest.class))).thenReturn(null);
+			
+			ArgumentCaptor<DeleteObjectRequest> deleteObjCaptor = ArgumentCaptor.forClass(DeleteObjectRequest.class);
+			when(s3.deleteObject(deleteObjCaptor.capture())).thenReturn(null);
+			
+			Track track = trackRepo.deleteTrack(trackId);
+			
+			DeleteObjectRequest deleteObjRequest = deleteObjCaptor.getValue();
+			assertEquals(bucketName, deleteObjRequest.bucket());
+			assertEquals(resultMap.get(AWSTrackRepo.TableSchema.KeyNames.S3_KEY).getS(), deleteObjRequest.key());
 		}
 	}
 }
