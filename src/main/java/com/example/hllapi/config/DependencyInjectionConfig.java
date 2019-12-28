@@ -101,13 +101,13 @@ public class DependencyInjectionConfig {
 	@Bean
 	public TrackRepo provideTrackRepo(
 		S3Client s3Client,
-		AmazonDynamoDB dynamoDB,
-		MongoDBTrackRepo mongoDBTrackRepo
+		AmazonDynamoDB dynamoDB
+//		MongoDBTrackRepo mongoDBTrackRepo
 	) {
 		TrackRepo trackRepo = null;
 		
-		switch(trackRepoImpl) {
-			case AWS_DYNAMO_DB_AND_AWS_S3:
+//		switch(trackRepoImpl) {
+//			case AWS_DYNAMO_DB_AND_AWS_S3:
 				trackRepo = new AWSTrackRepo(
 					s3Client,
 					dynamoDB,
@@ -115,15 +115,16 @@ public class DependencyInjectionConfig {
 					userIdIndexName,
 					bucketName
 				); 
-				break;
-			case MONGO_DB_AND_AWS_S3:
-				trackRepo = new MongoS3TrackRepo(
-					s3Client,
-					bucketName,
-					mongoDBTrackRepo
-				);
-				break;
-		}
+//				break;
+//			case MONGO_DB_AND_AWS_S3:
+//				trackRepo = new MongoS3TrackRepo(
+//					s3Client,
+//					bucketName
+//					,
+//					mongoDBTrackRepo
+//				);
+//				break;
+//		}
 		
 		return trackRepo;
 	}
