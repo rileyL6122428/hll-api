@@ -69,9 +69,6 @@ public class DependencyInjectionConfig {
 		return approvedFileTypesSet;
 	}
 	
-	@Value("${aws.s3.bucketName}")
-	private String bucketName;
-	
 	@Bean
 	public S3Client provideS3Client() {
 		return S3Client.builder()
@@ -86,13 +83,23 @@ public class DependencyInjectionConfig {
 			.build();
 	}
 	
+	@Value("${aws.s3.bucketName}")
+	private String bucketName;
+	
+	@Value("${aws.dynamodb.trackTableName}")
+	private String trackTableName;
+	
+	@Value("${aws.dynamodb.userIdIndexName}")
+	private String userIdIndexName;
+	
 	enum TrackRepoImpl {
 		AWS_DYNAMO_DB_AND_AWS_S3,
 		MONGO_DB_AND_AWS_S3
 	}
 	private TrackRepoImpl trackRepoImpl = TrackRepoImpl.AWS_DYNAMO_DB_AND_AWS_S3;
 	
-	@Bean TrackRepo provideTrackRepo(
+	@Bean
+	public TrackRepo provideTrackRepo(
 		S3Client s3Client,
 		AmazonDynamoDB dynamoDB,
 		MongoDBTrackRepo mongoDBTrackRepo
@@ -103,7 +110,10 @@ public class DependencyInjectionConfig {
 			case AWS_DYNAMO_DB_AND_AWS_S3:
 				trackRepo = new AWSTrackRepo(
 					s3Client,
-					dynamoDB
+					dynamoDB,
+					trackTableName,
+					userIdIndexName,
+					bucketName
 				); 
 				break;
 			case MONGO_DB_AND_AWS_S3:

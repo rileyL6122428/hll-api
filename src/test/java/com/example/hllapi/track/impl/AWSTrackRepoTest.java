@@ -17,9 +17,12 @@ import java.util.Map;
 
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.model.AttributeValue;
+import com.amazonaws.services.dynamodbv2.model.GetItemRequest;
+import com.amazonaws.services.dynamodbv2.model.GetItemResult;
 import com.amazonaws.services.dynamodbv2.model.QueryRequest;
 import com.amazonaws.services.dynamodbv2.model.QueryResult;
 import com.example.hllapi.track.Track;
+import com.example.hllapi.track.impl.AWSTrackRepo.TableSchema;
 
 import software.amazon.awssdk.services.s3.S3Client;
 
@@ -31,6 +34,7 @@ class AWSTrackRepoTest {
 	AmazonDynamoDB dynamoDB;
 	String trackTableName;
 	String userIdIndexName;
+	String bucketName;
 
 	@BeforeEach
 	void setup() {
@@ -38,13 +42,68 @@ class AWSTrackRepoTest {
 		dynamoDB = mock(AmazonDynamoDB.class);
 		trackTableName = "EXAMPLE_TRACK_TABLE_NAME";
 		userIdIndexName = "EXAMPLE_USER_ID_INDEX_NAME";
+		bucketName = "EXAMPLE_BUCKET_NAME";
 		
 		trackRepo = new AWSTrackRepo(
 			s3,
 			dynamoDB,
 			trackTableName,
-			userIdIndexName
+			userIdIndexName,
+			bucketName
 		);
+	}
+	
+	@Nested
+	public class GetTrackByIdMethod {
+		
+		String trackId;
+		Map<String, AttributeValue> resultMap;
+		
+		@BeforeEach
+		void setup() {
+			trackId = "EXAMPLE_TRACK_ID";
+			
+			resultMap = new HashMap<String, AttributeValue>(){{
+				put("id", new AttributeValue("EXAMPLE_ID"));
+				put("name", new AttributeValue("EXAMPLE_NAME"));
+				put("s3Key", new AttributeValue("EXAMPLE_S3_KEY"));
+				put("userId", new AttributeValue("EXAMPLE_USER_ID"));
+				put("duration", new AttributeValue(){{ setN("123"); }});
+			}};
+		}
+		
+		@Test
+		void returnsNullTrackWhenDynamoDBThrows() {
+			when(dynamoDB.getItem(any(GetItemRequest.class))).thenThrow(new RuntimeException("EXAMPLE_RUNTIME_EXCEPTION"));
+			Track track = trackRepo.getTrackById(trackId);
+			assertNull(track);
+		}
+		
+		@Test
+		void fetchesTrackViaDynamoClientWithRequiredParams() {
+			ArgumentCaptor<GetItemRequest> requestCaptor = ArgumentCaptor.forClass(GetItemRequest.class);
+			when(dynamoDB.getItem(requestCaptor.capture())).thenReturn(new GetItemResult().withItem(resultMap));
+			
+			trackRepo.getTrackById(trackId);
+			
+			GetItemRequest getItemRequest = requestCaptor.getValue();
+			assertEquals(trackTableName, getItemRequest.getTableName());
+			assertEquals(1, getItemRequest.getKey().size());
+			assertEquals(trackId, getItemRequest.getKey().get("id").getS());
+		}
+		
+		@Test
+		void returnsTrackMappedFromResultMap() {
+			when(dynamoDB.getItem(any(GetItemRequest.class))).thenReturn(new GetItemResult().withItem(resultMap));
+			
+			Track track = trackRepo.getTrackById(trackId);
+			
+			assertEquals("EXAMPLE_ID", track.getId());
+			assertEquals("EXAMPLE_NAME", track.getName());
+			assertEquals("EXAMPLE_S3_KEY", track.getS3Key());
+			assertEquals("EXAMPLE_USER_ID", track.getUserId());
+			assertEquals(123d, track.getDuration());
+		}
 	}
 	
 	@Nested
