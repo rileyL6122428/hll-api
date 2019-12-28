@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Random;
 import java.util.Set;
 
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -92,46 +93,36 @@ public class DependencyInjectionConfig {
 	@Value("${aws.dynamodb.userIdIndexName}")
 	private String userIdIndexName;
 	
-	enum TrackRepoImpl {
-		AWS_DYNAMO_DB_AND_AWS_S3,
-		MONGO_DB_AND_AWS_S3
-	}
-	private TrackRepoImpl trackRepoImpl = TrackRepoImpl.AWS_DYNAMO_DB_AND_AWS_S3;
-	
-	@Bean
-	public TrackRepo provideTrackRepo(
+	@Bean(name="awsTrackRepo")
+	public TrackRepo provideAWSTrackRepo(
 		S3Client s3Client,
 		AmazonDynamoDB dynamoDB
+	) {
+		return new AWSTrackRepo(
+			s3Client,
+			dynamoDB,
+			trackTableName,
+			userIdIndexName,
+			bucketName
+		); 
+	}
+	
+	@Bean(name="mongoS3TrackRepo")
+	public TrackRepo provideMongoAndS3TrackRepo(
+//		S3Client s3Client,
 //		MongoDBTrackRepo mongoDBTrackRepo
 	) {
-		TrackRepo trackRepo = null;
-		
-//		switch(trackRepoImpl) {
-//			case AWS_DYNAMO_DB_AND_AWS_S3:
-				trackRepo = new AWSTrackRepo(
-					s3Client,
-					dynamoDB,
-					trackTableName,
-					userIdIndexName,
-					bucketName
-				); 
-//				break;
-//			case MONGO_DB_AND_AWS_S3:
-//				trackRepo = new MongoS3TrackRepo(
-//					s3Client,
-//					bucketName
-//					,
-//					mongoDBTrackRepo
-//				);
-//				break;
-//		}
-		
-		return trackRepo;
+//		return new MongoS3TrackRepo(
+//			s3Client,
+//			bucketName,
+//			mongoDBTrackRepo
+//		);
+		return null;
 	}
 	
 	@Bean
 	public TrackUseCases provideTrackUseCases(
-		TrackRepo trackRepo
+		@Qualifier("awsTrackRepo") TrackRepo trackRepo
 	) {
 		return new TrackUseCasesImpl(
 			trackRepo,

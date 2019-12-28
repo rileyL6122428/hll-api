@@ -7,9 +7,6 @@ import org.springframework.boot.autoconfigure.data.mongo.MongoRepositoriesAutoCo
 import org.springframework.boot.autoconfigure.mongo.MongoAutoConfiguration;
 import org.springframework.context.annotation.ComponentScan;
 
-@ComponentScan({
-	"com.example.hllapi.config"
-})
 @SpringBootApplication(exclude = {
 	MongoAutoConfiguration.class, 
 	MongoDataAutoConfiguration.class,
