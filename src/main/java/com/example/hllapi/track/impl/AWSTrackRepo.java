@@ -49,7 +49,7 @@ public class AWSTrackRepo implements TrackRepo {
 	
 	private S3Client s3;
 	private AmazonDynamoDB dynamoDB;
-	private String trackTableName; // SHOULD BE "hey-look-listen-track"?
+	private String trackTableName;
 	private String userIdIndexName;
 	private String bucketName;
 	
