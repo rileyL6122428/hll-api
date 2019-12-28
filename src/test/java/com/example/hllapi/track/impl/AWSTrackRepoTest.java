@@ -22,15 +22,19 @@ import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
 import com.amazonaws.services.dynamodbv2.model.AttributeValue;
 import com.amazonaws.services.dynamodbv2.model.GetItemRequest;
 import com.amazonaws.services.dynamodbv2.model.GetItemResult;
+import com.amazonaws.services.dynamodbv2.model.PutItemRequest;
 import com.amazonaws.services.dynamodbv2.model.QueryRequest;
 import com.amazonaws.services.dynamodbv2.model.QueryResult;
 import com.example.hllapi.track.Track;
+import com.example.hllapi.track.TrackUseCases;
 import com.example.hllapi.track.impl.AWSTrackRepo.TableSchema;
 
 import software.amazon.awssdk.core.ResponseInputStream;
+import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.model.GetObjectResponse;
+import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
 class AWSTrackRepoTest {
 	
@@ -247,6 +251,89 @@ class AWSTrackRepoTest {
 			when(dynamoDB.getItem(any(GetItemRequest.class))).thenThrow(new RuntimeException());
 			InputStream trackStream = trackRepo.getTrackStream("EXAMPLE_TRACK_ID");
 			assertNull(trackStream);
+		}
+	}
+
+	@Nested
+	public class SaveTrackMethod {
+		
+		TrackUseCases.CreateTrackParams saveParams;
+		
+		@BeforeEach
+		void setup() {
+			saveParams = new TrackUseCases.CreateTrackParams() {{
+				trackName = "EXAMPLE_TRACK_NAME";
+				fileType = "EXAMPLE_FILE_TYPE";
+				artistName = "EXAMPLE_ARTIST_NAME";
+				trackBytes = new byte[] {};
+				duration = 123d;
+			}};			
+		}
+		
+		@Test
+		void returnsNullTrackWhenS3Throws() {
+			when(s3.putObject(any(PutObjectRequest.class), any(RequestBody.class))).thenThrow(new RuntimeException());
+			Track track = trackRepo.saveTrack(saveParams);
+			assertNull(track);
+		}
+		
+		@Test
+		void putsTrackContentsIntoS3() {
+			ArgumentCaptor<PutObjectRequest> putObjCaptor = ArgumentCaptor.forClass(PutObjectRequest.class);
+			ArgumentCaptor<RequestBody> reqBodyCaptor = ArgumentCaptor.forClass(RequestBody.class);
+			when(s3.putObject(putObjCaptor.capture(), reqBodyCaptor.capture())).thenReturn(null);
+			
+			trackRepo.saveTrack(saveParams);
+			
+			PutObjectRequest putObjRequest = putObjCaptor.getValue();
+			assertEquals("audio/" + saveParams.trackName + ".mp3", putObjRequest.key());
+			assertEquals(bucketName, putObjRequest.bucket());
+			
+			RequestBody requestBody = reqBodyCaptor.getValue();
+			assertEquals(saveParams.trackBytes.length, requestBody.contentLength());
+		}
+		
+		@Test
+		void returnsNullTrackIfDynamoDBThrows() {
+			when(s3.putObject(any(PutObjectRequest.class), any(RequestBody.class))).thenReturn(null);
+			when(dynamoDB.putItem(any(PutItemRequest.class))).thenThrow(new RuntimeException());
+			
+			Track track = trackRepo.saveTrack(saveParams);
+			
+			assertNull(track);
+		}
+		
+		@Test
+		void uploadsTrackMetadataToDynamoDB() {
+			when(s3.putObject(any(PutObjectRequest.class), any(RequestBody.class))).thenReturn(null);
+			
+			ArgumentCaptor<PutItemRequest> putItemCaptor = ArgumentCaptor.forClass(PutItemRequest.class);
+			when(dynamoDB.putItem(putItemCaptor.capture())).thenReturn(null);
+			
+			trackRepo.saveTrack(saveParams);
+			
+			PutItemRequest putItemRequest = putItemCaptor.getValue();
+			assertEquals(trackTableName, putItemRequest.getTableName());
+			
+			assertNotNull(putItemRequest.getItem().get("id").getS());
+			assertEquals(saveParams.trackName, putItemRequest.getItem().get("name").getS());
+			assertEquals("audio/" + saveParams.trackName + ".mp3", putItemRequest.getItem().get("s3Key").getS());
+			assertEquals(saveParams.artistName, putItemRequest.getItem().get("userId").getS());
+			assertEquals("123.0", putItemRequest.getItem().get("duration").getN());
+		}
+		
+		@Test
+		void returnsTrackDerivedFromSaveParams() {
+			when(s3.putObject(any(PutObjectRequest.class), any(RequestBody.class))).thenReturn(null);
+			when(dynamoDB.putItem(any(PutItemRequest.class))).thenReturn(null);
+			
+			Track track = trackRepo.saveTrack(saveParams);
+			
+			assertNotNull(track.getId());
+			assertEquals(saveParams.trackName, track.getName());
+			assertEquals("audio/" + saveParams.trackName + ".mp3", track.getS3Key());
+			assertEquals(saveParams.artistName, track.getUserId());
+			assertEquals(saveParams.duration, track.getDuration());
 		}
 	}
 }
