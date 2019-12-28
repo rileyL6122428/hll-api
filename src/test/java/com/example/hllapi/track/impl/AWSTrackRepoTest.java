@@ -8,8 +8,11 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
+
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -24,7 +27,10 @@ import com.amazonaws.services.dynamodbv2.model.QueryResult;
 import com.example.hllapi.track.Track;
 import com.example.hllapi.track.impl.AWSTrackRepo.TableSchema;
 
+import software.amazon.awssdk.core.ResponseInputStream;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.GetObjectRequest;
+import software.amazon.awssdk.services.s3.model.GetObjectResponse;
 
 class AWSTrackRepoTest {
 	
@@ -184,4 +190,63 @@ class AWSTrackRepoTest {
 		}	
 	}
 
+	@Nested
+	public class GetTrackStreamMethod {
+		
+		Map<String, AttributeValue> resultMap;
+		
+		@BeforeEach
+		void setup() {
+			resultMap = new HashMap<String, AttributeValue>(){{
+				put("id", new AttributeValue("EXAMPLE_ID"));
+				put("name", new AttributeValue("EXAMPLE_NAME"));
+				put("s3Key", new AttributeValue("EXAMPLE_S3_KEY"));
+				put("userId", new AttributeValue("EXAMPLE_USER_ID"));
+				put("duration", new AttributeValue(){{ setN("123"); }});
+			}};
+		}
+		
+		@Test
+		void fetchesTrackFileFromS3() {
+			when(dynamoDB.getItem(any(GetItemRequest.class))).thenReturn(new GetItemResult().withItem(resultMap));
+			
+			ArgumentCaptor<GetObjectRequest> s3Captor = ArgumentCaptor.forClass(GetObjectRequest.class); 
+			when(s3.getObject(s3Captor.capture())).thenReturn(null);
+			
+			trackRepo.getTrackStream("EXAMPLE_ID");
+			
+			GetObjectRequest getObjReq = s3Captor.getValue();
+			assertEquals("EXAMPLE_S3_KEY", getObjReq.key());
+			assertEquals(bucketName, getObjReq.bucket());
+		}
+		
+		@Test
+		void returnsTrackStreamFromS3Client() {
+			when(dynamoDB.getItem(any(GetItemRequest.class))).thenReturn(new GetItemResult().withItem(resultMap));
+			
+			ResponseInputStream<GetObjectResponse> s3Stream = mock(ResponseInputStream.class);
+			when(s3.getObject(any(GetObjectRequest.class))).thenReturn(s3Stream);
+			
+			InputStream returnedStream = trackRepo.getTrackStream("EXAMPLE_TRACK_ID");
+			
+			assertEquals(s3Stream, returnedStream);
+		}
+		
+		@Test
+		void returnsNullStreamWhenS3ClientThrows() {
+			when(dynamoDB.getItem(any(GetItemRequest.class))).thenReturn(new GetItemResult().withItem(resultMap));
+			when(s3.getObject(any(GetObjectRequest.class))).thenThrow(new RuntimeException());
+			
+			InputStream trackStream = trackRepo.getTrackStream("EXAMPLE_TRACK_ID");
+			
+			assertNull(trackStream);
+		}
+		
+		@Test
+		void returnsNullStreamWhenMongoTrackRepoThrows() {
+			when(dynamoDB.getItem(any(GetItemRequest.class))).thenThrow(new RuntimeException());
+			InputStream trackStream = trackRepo.getTrackStream("EXAMPLE_TRACK_ID");
+			assertNull(trackStream);
+		}
+	}
 }
