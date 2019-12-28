@@ -75,11 +75,11 @@ class AWSTrackRepoTest {
 			trackId = "EXAMPLE_TRACK_ID";
 			
 			resultMap = new HashMap<String, AttributeValue>(){{
-				put("id", new AttributeValue("EXAMPLE_ID"));
-				put("name", new AttributeValue("EXAMPLE_NAME"));
-				put("s3Key", new AttributeValue("EXAMPLE_S3_KEY"));
-				put("userId", new AttributeValue("EXAMPLE_USER_ID"));
-				put("duration", new AttributeValue(){{ setN("123"); }});
+				put(AWSTrackRepo.TableSchema.KeyNames.ID, new AttributeValue("EXAMPLE_ID"));
+				put(AWSTrackRepo.TableSchema.KeyNames.NAME, new AttributeValue("EXAMPLE_NAME"));
+				put(AWSTrackRepo.TableSchema.KeyNames.S3_KEY, new AttributeValue("EXAMPLE_S3_KEY"));
+				put(AWSTrackRepo.TableSchema.KeyNames.USER_ID, new AttributeValue("EXAMPLE_USER_ID"));
+				put(AWSTrackRepo.TableSchema.KeyNames.DURATION, new AttributeValue(){{ setN("123"); }});
 			}};
 		}
 		
@@ -159,19 +159,19 @@ class AWSTrackRepoTest {
 			QueryResult queryResult = mock(QueryResult.class);
 			when(queryResult.getItems()).thenReturn(new ArrayList<Map<String, AttributeValue>>(){{
 				add(new HashMap<String, AttributeValue>(){{
-					put("id", new AttributeValue("EXAMPLE_ID_1"));
-					put("name", new AttributeValue("EXAMPLE_NAME_1"));
-					put("s3Key", new AttributeValue("EXAMPLE_S3_KEY_1"));
-					put("userId", new AttributeValue("EXAMPLE_USER_ID_1"));
-					put("duration", new AttributeValue(){{ setN("1"); }});
+					put(AWSTrackRepo.TableSchema.KeyNames.ID, new AttributeValue("EXAMPLE_ID_1"));
+					put(AWSTrackRepo.TableSchema.KeyNames.NAME, new AttributeValue("EXAMPLE_NAME_1"));
+					put(AWSTrackRepo.TableSchema.KeyNames.S3_KEY, new AttributeValue("EXAMPLE_S3_KEY_1"));
+					put(AWSTrackRepo.TableSchema.KeyNames.USER_ID, new AttributeValue("EXAMPLE_USER_ID_1"));
+					put(AWSTrackRepo.TableSchema.KeyNames.DURATION, new AttributeValue(){{ setN("1"); }});
 				}});
 				
 				add(new HashMap<String, AttributeValue>(){{
-					put("id", new AttributeValue("EXAMPLE_ID_2"));
-					put("name", new AttributeValue("EXAMPLE_NAME_2"));
-					put("s3Key", new AttributeValue("EXAMPLE_S3_KEY_2"));
-					put("userId", new AttributeValue("EXAMPLE_USER_ID_2"));
-					put("duration", new AttributeValue(){{ setN("2"); }});
+					put(AWSTrackRepo.TableSchema.KeyNames.ID, new AttributeValue("EXAMPLE_ID_2"));
+					put(AWSTrackRepo.TableSchema.KeyNames.NAME, new AttributeValue("EXAMPLE_NAME_2"));
+					put(AWSTrackRepo.TableSchema.KeyNames.S3_KEY, new AttributeValue("EXAMPLE_S3_KEY_2"));
+					put(AWSTrackRepo.TableSchema.KeyNames.USER_ID, new AttributeValue("EXAMPLE_USER_ID_2"));
+					put(AWSTrackRepo.TableSchema.KeyNames.DURATION, new AttributeValue(){{ setN("2"); }});
 				}});
 			}});
 			
@@ -203,11 +203,11 @@ class AWSTrackRepoTest {
 		@BeforeEach
 		void setup() {
 			resultMap = new HashMap<String, AttributeValue>(){{
-				put("id", new AttributeValue("EXAMPLE_ID"));
-				put("name", new AttributeValue("EXAMPLE_NAME"));
-				put("s3Key", new AttributeValue("EXAMPLE_S3_KEY"));
-				put("userId", new AttributeValue("EXAMPLE_USER_ID"));
-				put("duration", new AttributeValue(){{ setN("123"); }});
+				put(AWSTrackRepo.TableSchema.KeyNames.ID, new AttributeValue("EXAMPLE_ID"));
+				put(AWSTrackRepo.TableSchema.KeyNames.NAME, new AttributeValue("EXAMPLE_NAME"));
+				put(AWSTrackRepo.TableSchema.KeyNames.S3_KEY, new AttributeValue("EXAMPLE_S3_KEY"));
+				put(AWSTrackRepo.TableSchema.KeyNames.USER_ID, new AttributeValue("EXAMPLE_USER_ID"));
+				put(AWSTrackRepo.TableSchema.KeyNames.DURATION, new AttributeValue(){{ setN("123"); }});
 			}};
 		}
 		
