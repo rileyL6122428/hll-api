@@ -248,7 +248,7 @@ class AWSTrackRepoTest {
 		}
 		
 		@Test
-		void returnsNullStreamWhenMongoTrackRepoThrows() {
+		void returnsNullStreamWhenDynamoDBThrows() {
 			when(dynamoDB.getItem(any(GetItemRequest.class))).thenThrow(new RuntimeException());
 			InputStream trackStream = trackRepo.getTrackStream("EXAMPLE_TRACK_ID");
 			assertNull(trackStream);
