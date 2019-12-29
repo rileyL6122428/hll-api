@@ -5,15 +5,19 @@ import java.util.List;
 import java.util.Random;
 import java.util.Set;
 
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import com.amazonaws.regions.Regions;
+import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
+import com.amazonaws.services.dynamodbv2.AmazonDynamoDBClientBuilder;
 import com.example.hllapi.track.TrackMetadataParser;
+import com.example.hllapi.track.TrackRepo;
 import com.example.hllapi.track.TrackUseCases;
+import com.example.hllapi.track.impl.AWSTrackRepo;
 import com.example.hllapi.track.impl.FfmpegTrackParser;
-import com.example.hllapi.track.impl.MongoDBTrackRepo;
-import com.example.hllapi.track.impl.MongoS3TrackRepo;
 import com.example.hllapi.track.impl.TrackUseCasesImpl;
 
 import net.bramp.ffmpeg.FFprobe;
@@ -21,7 +25,7 @@ import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 
 @Configuration
-public class MongoS3Config {
+public class DependencyInjectionConfig {
 	
 	@Value("${fileparser.tempFilePath}")
 	private String tempFilepath;
@@ -64,9 +68,6 @@ public class MongoS3Config {
 		return approvedFileTypesSet;
 	}
 	
-	@Value("${aws.s3.bucketName}")
-	private String bucketName;
-	
 	@Bean
 	public S3Client provideS3Client() {
 		return S3Client.builder()
@@ -75,17 +76,54 @@ public class MongoS3Config {
 	}
 	
 	@Bean
-	public TrackUseCases provideTrackUseCases(
+	public AmazonDynamoDB provideDynamoDB() {
+		return AmazonDynamoDBClientBuilder.standard()
+			.withRegion(Regions.US_EAST_2)
+			.build();
+	}
+	
+	@Value("${aws.s3.bucketName}")
+	private String bucketName;
+	
+	@Value("${aws.dynamodb.trackTableName}")
+	private String trackTableName;
+	
+	@Value("${aws.dynamodb.userIdIndexName}")
+	private String userIdIndexName;
+	
+	@Bean(name="awsTrackRepo")
+	public TrackRepo provideAWSTrackRepo(
 		S3Client s3Client,
-		MongoDBTrackRepo mongoDBTrackRepo
+		AmazonDynamoDB dynamoDB
 	) {
-		
+		return new AWSTrackRepo(
+			s3Client,
+			dynamoDB,
+			trackTableName,
+			userIdIndexName,
+			bucketName
+		); 
+	}
+	
+	@Bean(name="mongoS3TrackRepo")
+	public TrackRepo provideMongoAndS3TrackRepo(
+//		S3Client s3Client,
+//		MongoDBTrackRepo mongoDBTrackRepo
+	) {
+//		return new MongoS3TrackRepo(
+//			s3Client,
+//			bucketName,
+//			mongoDBTrackRepo
+//		);
+		return null;
+	}
+	
+	@Bean
+	public TrackUseCases provideTrackUseCases(
+		@Qualifier("awsTrackRepo") TrackRepo trackRepo
+	) {
 		return new TrackUseCasesImpl(
-			new MongoS3TrackRepo(
-				s3Client,
-				bucketName,
-				mongoDBTrackRepo
-			),
+			trackRepo,
 			getApprovedFileTypesSet()
 		);
 	}
