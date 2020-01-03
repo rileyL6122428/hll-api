@@ -26,10 +26,6 @@ public class Mp3agicTrackParser implements TrackMetadataParser {
 		File tempFile = new File(tempFilePath);
 		Files.write(tempFile.toPath(), fileBytes);
 		
-//		tempFile.setExecutable(true, false);
-//		tempFile.setReadable(true, false);
-//		tempFile.setWritable(true, false);
-		
 		Mp3File mp3File = new Mp3File(tempFile.getAbsolutePath());
 		
 		double duration = (double)mp3File.getLengthInMilliseconds() / 1000d;

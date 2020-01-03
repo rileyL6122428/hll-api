@@ -19,6 +19,8 @@ import com.example.hllapi.track.TrackRepo;
 import com.example.hllapi.track.TrackUseCases;
 import com.example.hllapi.track.impl.AWSTrackRepo;
 import com.example.hllapi.track.impl.FfmpegTrackParser;
+import com.example.hllapi.track.impl.MongoDBTrackRepo;
+import com.example.hllapi.track.impl.MongoS3TrackRepo;
 import com.example.hllapi.track.impl.Mp3agicTrackParser;
 import com.example.hllapi.track.impl.TrackUseCasesImpl;
 
@@ -120,17 +122,17 @@ public class DependencyInjectionConfig {
 		); 
 	}
 	
+	@Lazy
 	@Bean(name="mongoS3TrackRepo")
 	public TrackRepo provideMongoAndS3TrackRepo(
-//		S3Client s3Client,
-//		MongoDBTrackRepo mongoDBTrackRepo
+		S3Client s3Client,
+		MongoDBTrackRepo mongoDBTrackRepo
 	) {
-//		return new MongoS3TrackRepo(
-//			s3Client,
-//			bucketName,
-//			mongoDBTrackRepo
-//		);
-		return null;
+		return new MongoS3TrackRepo(
+			s3Client,
+			bucketName,
+			mongoDBTrackRepo
+		);
 	}
 	
 	@Bean
