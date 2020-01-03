@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.annotation.Lazy;
 
 import com.amazonaws.regions.Regions;
 import com.amazonaws.services.dynamodbv2.AmazonDynamoDB;
@@ -18,6 +19,9 @@ import com.example.hllapi.track.TrackRepo;
 import com.example.hllapi.track.TrackUseCases;
 import com.example.hllapi.track.impl.AWSTrackRepo;
 import com.example.hllapi.track.impl.FfmpegTrackParser;
+import com.example.hllapi.track.impl.MongoDBTrackRepo;
+import com.example.hllapi.track.impl.MongoS3TrackRepo;
+import com.example.hllapi.track.impl.Mp3agicTrackParser;
 import com.example.hllapi.track.impl.TrackUseCasesImpl;
 
 import net.bramp.ffmpeg.FFprobe;
@@ -33,13 +37,15 @@ public class DependencyInjectionConfig {
 	@Value("${ffprobe.bin.path}")
 	private String ffprobePath;
 	
+	@Lazy
 	@Bean
 	public FFprobe provideFFProbe() throws Exception {
 		return new FFprobe(ffprobePath);
 	}
 	
-	@Bean
-	public TrackMetadataParser provideTrackMetadataParser(
+	@Lazy
+	@Bean(name="inactiveTrackParser")
+	public TrackMetadataParser provideFfmpegTrackParser(
 		FFprobe ffprobe,
 		Random random
 	) throws Exception {
@@ -47,6 +53,17 @@ public class DependencyInjectionConfig {
 		return new FfmpegTrackParser(
 			tempFilepath, 
 			ffprobe,
+			random
+		);
+	}
+	
+	@Lazy
+	@Bean(name="activeTrackParser")
+	public TrackMetadataParser provideMp3agicTrackParser(
+		Random random
+	) {
+		return new Mp3agicTrackParser(
+			tempFilepath,
 			random
 		);
 	}
@@ -105,17 +122,17 @@ public class DependencyInjectionConfig {
 		); 
 	}
 	
+	@Lazy
 	@Bean(name="mongoS3TrackRepo")
 	public TrackRepo provideMongoAndS3TrackRepo(
-//		S3Client s3Client,
-//		MongoDBTrackRepo mongoDBTrackRepo
+		S3Client s3Client,
+		MongoDBTrackRepo mongoDBTrackRepo
 	) {
-//		return new MongoS3TrackRepo(
-//			s3Client,
-//			bucketName,
-//			mongoDBTrackRepo
-//		);
-		return null;
+		return new MongoS3TrackRepo(
+			s3Client,
+			bucketName,
+			mongoDBTrackRepo
+		);
 	}
 	
 	@Bean

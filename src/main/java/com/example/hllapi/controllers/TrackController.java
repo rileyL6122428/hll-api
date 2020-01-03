@@ -1,6 +1,7 @@
 package com.example.hllapi.controllers;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.core.io.InputStreamResource;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -39,7 +40,7 @@ public class TrackController {
 	@Autowired
 	public TrackController(
 		TrackUseCases trackUseCases,
-		TrackMetadataParser trackParser
+		@Qualifier("activeTrackParser") TrackMetadataParser trackParser
 	) {
 		this.trackUseCases = trackUseCases;
 		this.trackParser = trackParser;
