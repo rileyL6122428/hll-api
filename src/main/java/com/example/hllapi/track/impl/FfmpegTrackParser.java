@@ -31,10 +31,6 @@ public class FfmpegTrackParser implements TrackMetadataParser {
 		File tempFile = new File(tempFilePath);
 		Files.write(tempFile.toPath(), fileBytes);
 		
-		tempFile.setExecutable(true, false);
-		tempFile.setReadable(true, false);
-		tempFile.setWritable(true, false);
-		
 		FFmpegProbeResult probeResult = ffprobe.probe(tempFilePath);
 		FFmpegFormat format = probeResult.getFormat();
 		
