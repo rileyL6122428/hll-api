@@ -1,6 +1,6 @@
 # Hey Look Listen API
 
-An API for uploading and streaming Mpeg/Mp3 files.
+An API for uploading and streaming Mpeg/Mp3 files. Consume by the [Hey Look Listen Web Client](https://github.com/rileyL6122428/hll-web-client) and the [Hey Look Listen Mobile Client](https://github.com/rileyL6122428/hll-mobile-client)
 
 ## Schemas
 
