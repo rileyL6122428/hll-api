@@ -20,23 +20,23 @@ An API for uploading and streaming Mpeg/Mp3 files.
 
 * Get Track Metadata By Artist(Uploader)
 
-- Path: /api/public/tracks?artist-id={artist-id}
-- Returns: A list of Tracks.
+   - Path: /api/public/tracks?artist-id={artist-id}
+   - Returns: A list of Tracks.
 
 * Stream Track
 
-- Path: /api/public/track/{trackId}/stream
-- Returns: An audio/mpeg.
+   - Path: /api/public/track/{trackId}/stream
+   - Returns: An audio/mpeg.
 
 * Upload Track
 
-- Path: /api/private/track
-- Headers: Authorization -> An Oauth 2.0 bearer token.
-- Form Parameter: audio-file -> An audio/mpeg file.
-- Returns: The uploaded track.
+   - Path: /api/private/track
+   - Headers: Authorization -> An Oauth 2.0 bearer token.
+   - Form Parameter: audio-file -> An audio/mpeg file.
+   - Returns: The uploaded track.
 
 * Delete Track
 
-- Path: /api/private/track/{trackId}
-- Headers: Authorization -> An Oauth 2.0 bearer token.
-- Returns: The deleted track.
+   - Path: /api/private/track/{trackId}
+   - Headers: Authorization -> An Oauth 2.0 bearer token.
+   - Returns: The deleted track.
